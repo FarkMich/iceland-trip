@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d1b2a">
+<title>🧊 Iceland Trip</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap">
+<style>
+:root{--bg:#0d1b2a;--bg2:#0f2235;--bg3:#162c45;--border:#1a3650;--accent:#38bdf8;--green:#22c55e;--yellow:#f59e0b;--red:#ef4444;--text:#ddeeff;--muted:#557a99;--card:#0b1e30;--font:'Plus Jakarta Sans',sans-serif;--mono:'DM Mono',monospace;--r:14px}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font)}
+
+/* LOADING */
+#loading{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
+.ll{font-size:52px;animation:bob 2s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-12px) rotate(5deg)}}
+.lt{font-size:20px;font-weight:700;letter-spacing:-.5px}.ls{font-size:12px;color:var(--muted);font-family:var(--mono)}
+.lb{width:180px;height:2px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.lf{height:100%;background:linear-gradient(90deg,var(--accent),#7dd3fc);width:0%;transition:width .3s}
+
+/* SHELL */
+#app{height:100%;display:flex;flex-direction:column}
+
+/* TOPBAR */
+#topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 16px 10px;padding-top:calc(12px + env(safe-area-inset-top,0px));display:flex;align-items:center;gap:10px;flex-shrink:0}
+.ti{font-size:22px}.tt h1{font-size:15px;font-weight:700;letter-spacing:-.3px}.tt p{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.sp{flex:1}.ld{width:7px;height:7px;border-radius:50%;background:var(--green);animation:lp 2s infinite}
+@keyframes lp{0%,100%{opacity:1;box-shadow:0 0 0 0 #22c55e66}50%{opacity:.6;box-shadow:0 0 0 5px transparent}}
+.lv{font-size:10px;color:var(--green);font-family:var(--mono);font-weight:500}
+
+/* TABS */
+#tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0}
+.tab{flex:1;padding:8px 4px 7px;text-align:center;cursor:pointer;font-size:9px;color:var(--muted);font-family:var(--mono);font-weight:500;border-bottom:2px solid transparent;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:2px;letter-spacing:.3px}
+.tab .ti2{font-size:17px}.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* CONTENT */
+#content{flex:1;overflow:hidden;position:relative}
+.panel{position:absolute;inset:0;overflow-y:auto;display:none;-webkit-overflow-scrolling:touch;padding-top:4px}
+.panel.active{display:block}
+#mp{overflow:hidden;display:none;flex-direction:column}
+#mp.active{display:flex}
+#map{flex:1;min-height:0}
+
+/* Leaflet dark popup */
+.leaflet-popup-content-wrapper{background:var(--bg2)!important;color:var(--text)!important;border:1px solid var(--border)!important;border-radius:14px!important;box-shadow:0 8px 32px rgba(0,0,0,.7)!important}
+.leaflet-popup-tip{background:var(--bg2)!important}
+.leaflet-popup-content{margin:12px 14px!important;font-family:var(--font)!important;min-width:200px}
+.pn{font-size:13px;font-weight:700;margin-bottom:3px}
+.pm{font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:6px}
+.pw{font-size:13px;display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.pp{font-size:11px;color:var(--accent);font-family:var(--mono)}
+.prb{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-family:var(--mono);font-weight:600;padding:3px 9px;border-radius:8px;margin-top:6px}
+.ro{background:#0a2a14;color:var(--green)}.rc{background:#2a200a;color:var(--yellow)}.rk{background:#0a1e30;color:var(--accent)}
+
+/* SECTION HEADER */
+.sh{padding:12px 16px 6px;font-size:10px;font-family:var(--mono);color:var(--muted);font-weight:500;letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between}
+
+/* DAY CARDS */
+.dc{margin:0 12px 10px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:border-color .15s}
+.dc:active{border-color:var(--accent)}
+.dh{padding:12px 14px;display:flex;align-items:center;gap:10px}
+.dn{width:34px;height:34px;border-radius:9px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;font-family:var(--mono);color:var(--accent);flex-shrink:0}
+.dn.past{color:var(--muted);background:var(--bg2)}.dn.today{background:var(--accent);color:var(--bg)}
+.di{flex:1;min-width:0}.dd{font-size:10px;font-family:var(--mono);color:var(--muted)}
+.dc-name{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dr{font-size:11px;color:var(--muted)}
+.dw{text-align:right;flex-shrink:0}
+.wt{font-size:19px;font-weight:300;font-family:var(--mono)}.wi{font-size:19px}.wl{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.db{padding:0 14px 12px;display:none}.db.open{display:block}
+.divr{border:none;border-top:1px solid var(--border);margin-bottom:10px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.chip{font-size:10px;font-family:var(--mono);font-weight:500;padding:3px 9px;border-radius:10px}
+.cp{background:#081e30;color:var(--accent);border:1px solid #143550}
+.cd{background:#101e0a;color:#86efac;border:1px solid #1a3a10}
+.cw{background:#1a180a;color:var(--yellow);border:1px solid #3a3010}
+.co{background:#081e14;color:var(--green);border:1px solid #103a20}
+.aurora{background:linear-gradient(135deg,#0d0020,#1a0035,#2a0860,#1a0035,#0d0020);border-radius:10px;padding:8px 12px;margin-bottom:9px;display:flex;align-items:center;justify-content:space-between}
+.al{font-size:11px;font-family:var(--mono);color:#c084fc}.as{letter-spacing:3px;font-size:13px}
+.sl{display:flex;flex-direction:column;gap:3px;margin-bottom:8px}
+.si{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--muted)}
+.si::before{content:'→';color:var(--accent);flex-shrink:0}
+.sn{font-size:11px;color:var(--muted);font-style:italic;margin-top:4px;padding-left:14px}
+
+/* WEATHER */
+.wloc{margin:0 12px 10px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.wlh{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.wln{font-size:13px;font-weight:600}.wlr{font-size:11px;color:var(--muted)}.wlni{font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:auto}
+.fscroll{display:flex;gap:8px;padding:10px 14px;overflow-x:auto;scrollbar-width:none}
+.fscroll::-webkit-scrollbar{display:none}
+.fday{flex-shrink:0;width:54px;text-align:center;padding:8px 4px;background:var(--bg3);border-radius:10px}
+.fday.camp{background:#0a2a3a;border:1px solid #1a5070}
+.fdow{font-size:9px;font-family:var(--mono);color:var(--muted);margin-bottom:3px;text-transform:uppercase}
+.fday.camp .fdow{color:var(--accent)}
+.fic{font-size:20px;margin-bottom:3px}
+.fhi{font-size:14px;font-weight:700;font-family:var(--mono)}.flo{font-size:10px;color:var(--muted);font-family:var(--mono)}
+.fday.camp .flo{color:#7dd3fc}
+.fwd{font-size:9px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+
+/* ROADS */
+.alert{margin:0 12px 10px;border-radius:var(--r);padding:12px 14px;display:flex;gap:10px;border-left:3px solid}
+.alert.green{background:#081a10;border-color:var(--green)}.alert.yellow{background:#1a1504;border-color:var(--yellow)}.alert.red{background:#1a0808;border-color:var(--red)}
+.ai{font-size:20px;flex-shrink:0}.at{font-size:13px;font-weight:600;margin-bottom:3px}.ab{font-size:12px;color:var(--muted);line-height:1.5}
+.seg{margin:0 12px 8px}
+.segrow{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;display:flex;align-items:center;gap:10px}
+.sname{flex:1}.sname .sn1{font-size:12px;font-weight:500}.sname .sn2{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+.sbadge{font-size:10px;font-family:var(--mono);font-weight:600;padding:4px 10px;border-radius:9px;flex-shrink:0}
+.so{background:#081e14;color:var(--green)}.sc{background:#1a1504;color:var(--yellow)}.sk{background:#081422;color:var(--accent)}
+
+.elinks{margin:0 12px 16px;display:flex;flex-direction:column;gap:8px}
+.elink{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--text);cursor:pointer}
+.elink:active{background:var(--bg2)}
+.eli{font-size:22px}.elt .elt1{font-size:13px;font-weight:600}.elt .elt2{font-size:11px;color:var(--muted)}
+.ela{margin-left:auto;color:var(--muted);font-size:20px;font-weight:300}
+
+/* MARKER */
+.cm{width:30px;height:30px;border-radius:50%;background:var(--accent);border:2.5px solid white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:var(--mono);color:#0d1b2a;box-shadow:0 2px 12px rgba(0,0,0,.5);cursor:pointer}
+.cm.today{background:var(--green);box-shadow:0 0 0 4px rgba(34,197,94,.25),0 2px 12px rgba(0,0,0,.5)}
+.cm.past{background:#1e3550;border-color:#334a66;color:var(--muted)}
+
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.bp{height:calc(24px + env(safe-area-inset-bottom,0px))}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="ll">🧊</div>
+  <div class="lt">Iceland Trip</div>
+  <div class="ls">Mar 24 – Apr 1 · Ring Road</div>
+  <div class="lb"><div class="lf" id="lf"></div></div>
+  <div class="ls" id="lstatus">Loading…</div>
+</div>
+
+<div id="app" style="display:none">
+  <div id="topbar">
+    <div class="ti">🧊</div>
+    <div class="tt"><h1>Iceland Camper</h1><p>Mar 24 – Apr 1 · Clockwise Ring Road</p></div>
+    <div class="sp"></div>
+    <div class="ld"></div>&nbsp;<div class="lv">LIVE WX</div>
+  </div>
+  <div id="tabs">
+    <div class="tab active" data-p="mp"><span class="ti2">🗺</span>MAP</div>
+    <div class="tab" data-p="ip"><span class="ti2">📅</span>ROUTE</div>
+    <div class="tab" data-p="wp"><span class="ti2">🌦</span>WEATHER</div>
+    <div class="tab" data-p="rp"><span class="ti2">🚧</span>ROADS</div>
+  </div>
+  <div id="content">
+    <div id="mp" class="panel active"><div id="map"></div></div>
+    <div id="ip" class="panel"><div id="ilist"></div><div class="bp"></div></div>
+    <div id="wp" class="panel"><div class="sh">7-DAY FORECAST PER CAMPSITE</div><div id="wlist"></div><div class="bp"></div></div>
+    <div id="rp" class="panel"><div id="rcontent"></div><div class="bp"></div></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
+<script>
+const SITES=[
+  {id:'hellisholar',name:'Hellishólar',region:'South Iceland · Fljótshlíð',n:1,date:'Mar 24',dstr:'2026-03-24',lat:63.7253,lon:-20.0384,price:'~6,300 kr/p',km:180,from:'Keflavík (2h via Seljalandsfoss)',sights:['Seljalandsfoss — walk behind the waterfall','Skógafoss waterfall','Eyjafjallajökull views'],note:'25-year age minimum. Restaurant on site.',parka:'https://parka.is/camping/hellisholar/',aurora:2,seg:'s1'},
+  {id:'fossardalur',name:'Fossárdalur',region:'East Fjords · Berufjörður',n:2,date:'Mar 25',dstr:'2026-03-25',lat:64.7558,lon:-14.4986,price:'~3,900 kr/p',km:430,from:'Hellishólar (5.5h)',sights:['Vík black beach + Reynisfjara sea stacks','Jökulsárlón glacier lagoon & icebergs','Diamond Beach (ice chunks on black sand)'],note:'Rated 4.8★ — one of Iceland\'s best. Valley with waterfalls right at camp.',parka:'https://parka.is/camping/fossardalur/',aurora:5,seg:'s2'},
+  {id:'bakkafjordur',name:'Bakkafjörður',region:'Far Northeast Iceland',n:3,date:'Mar 26',dstr:'2026-03-26',lat:66.0369,lon:-14.8029,price:'~3,000 kr/p',km:220,from:'Fossárdalur (3.5h via East Fjords)',sights:['Dramatic twisting East Fjords coastal road','Djúpivogur egg sculptures (quick stop)','Digranes headland hike from the village'],note:'Very remote, very quiet. Reindeer spotted nearby.',parka:'https://parka.is/camping/bakkafjordur/',aurora:5,seg:'s3'},
+  {id:'cja',name:'CJA Camping, Laugar',region:'North Iceland · Reykjadal',n:4,date:'Mar 27',dstr:'2026-03-27',lat:65.7017,lon:-17.3498,price:'~3,200 kr/p',km:260,from:'Bakkafjörður (3.5h via Dettifoss)',sights:['Dettifoss — Europe\'s most powerful waterfall','Lake Mývatn volcanic area (optional detour)','Laugar geothermal pool — 2km from camp'],note:'Private hedged pitches. Legendary hosts. Open all year.',parka:'https://parka.is/camping/cja/',aurora:5,seg:'s4'},
+  {id:'bakkaflot',name:'Bakkaflöt',region:'North Iceland · Skagafjörður',n:5,date:'Mar 28',dstr:'2026-03-28',lat:65.4633,lon:-19.3461,price:'~3,400 kr/p',km:150,from:'CJA Laugar (2h via Goðafoss)',sights:['Goðafoss waterfall — don\'t skip!','Hofsós infinity pool into the fjord','Glaumbaer turf farm museum'],note:'Riverside on Svartá. Hot tubs 800 kr extra. Open Mar 8–May 3 ✓',parka:'https://parka.is/camping/bakkaflot/',aurora:4,seg:'s5'},
+  {id:'snorrastadir',name:'Snorrastaðir / Eldborg',region:'West Iceland · Borgarnes',n:6,date:'Mar 29',dstr:'2026-03-29',lat:64.7736,lon:-22.3012,price:'~3,800 kr/p',km:220,from:'Bakkaflöt (3h via Borgarnes)',sights:['Borgarnes Settlement Centre (Viking museum)','Eldborg volcanic crater walk (trailhead at camp)','Baby goats on site 🐐'],note:'Great aurora spot. Open all year.',parka:'https://parka.is/camping/snorrastadir/',aurora:4,seg:'s6'},
+  {id:'grundarfjordur',name:'Grundarfjörður',region:'Snæfellsnes Peninsula',n:7,date:'Mar 30',dstr:'2026-03-30',lat:64.9206,lon:-23.2582,price:'~2,600 kr/p',km:100,from:'Snorrastaðir (1.5h)',sights:['Snæfellsjökull glacier — Jules Verne\'s gateway!','Arnarstapi sea cliffs + Hellnar coastal walk','Kirkjufell — most photographed mountain, right at camp'],note:'Cheapest on route! Winter mode. Use pool for showers.',parka:'https://parka.is/camping/grundarfjordur/',aurora:3,seg:'s7'},
+  {id:'hellisholar2',name:'Hellishólar (night 8)',region:'South Iceland · loop back',n:8,date:'Mar 31',dstr:'2026-03-31',lat:63.7253,lon:-20.0384,price:'~6,300 kr/p',km:280,from:'Grundarfjörður (3.5h via Golden Circle)',sights:['Þingvellir — UNESCO, walk the tectonic rift','Geysir — Strokkur erupts every 5–8 minutes','Gullfoss waterfall'],note:'Last night. 90 min to Keflavík airport in the morning.',parka:'https://parka.is/camping/hellisholar/',aurora:2,seg:'s8'},
+];
+
+const SEGS={
+  s1:{name:'Keflavík → South Coast',note:'Ring Rd paved. Ice patches possible at night.',status:'open'},
+  s2:{name:'South Coast → East Fjords',note:'Long drive (430km). Possible snow near East Fjords.',status:'caution'},
+  s3:{name:'East Fjords coastal road north',note:'Twisting road, can be icy/snowy in late March. Drive slowly.',status:'caution'},
+  s4:{name:'Northeast → North (via Dettifoss)',note:'Rd 862 east side usually passable. Check road.is.',status:'check'},
+  s5:{name:'North Iceland → Skagafjörður',note:'Ring Rd paved. Some wind exposure.',status:'open'},
+  s6:{name:'Skagafjörður → Snæfellsnes (via Borgarnes)',note:'Rt 1 + Rt 54. Both paved and well-maintained.',status:'open'},
+  s7:{name:'Snæfellsnes Peninsula loop (Rt 574)',note:'Can have ice/wind near glacier in late March.',status:'caution'},
+  s8:{name:'Grundarfjörður → Golden Circle → South',note:'Well-maintained tourist roads. All paved.',status:'open'},
+};
+
+const WXI={0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',48:'🌫',51:'🌦',53:'🌦',55:'🌧',61:'🌧',63:'🌧',65:'🌧',71:'🌨',73:'❄️',75:'❄️',77:'❄️',80:'🌦',81:'🌧',82:'⛈',85:'🌨',86:'❄️',95:'⛈',96:'⛈',99:'⛈'};
+
+let wx={};
+let map;
+
+function today(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function isToday(s){return s.dstr===today()}
+function isPast(s){return s.dstr<today()}
+function stars(n){return '★'.repeat(n)+'☆'.repeat(5-n)}
+function wdir(d){return ['N','NE','E','SE','S','SW','W','NW'][Math.round(d/45)%8]}
+function sclass(s){return{open:'so',caution:'sc',check:'sk'}[s]}
+function slabel(s){return{open:'✓ OPEN',caution:'⚠ CAUTION',check:'🔍 CHECK'}[s]}
+function prclass(s){return{open:'ro',caution:'rc',check:'rk'}[s]}
+
+async function fetchWx(site){
+  const u=`https://api.open-meteo.com/v1/forecast?latitude=${site.lat}&longitude=${site.lon}&daily=weathercode,temperature_2m_max,temperature_2m_min,windspeed_10m_max,winddirection_10m_dominant&wind_speed_unit=ms&timezone=Atlantic/Reykjavik&forecast_days=16`;
+  const r=await fetch(u);const j=await r.json();return j.daily;
+}
+
+function wxForDate(id,dstr){
+  const d=wx[id];if(!d)return null;
+  const i=d.time.indexOf(dstr);if(i<0)return null;
+  return{code:d.weathercode[i],hi:Math.round(d.temperature_2m_max[i]),lo:Math.round(d.temperature_2m_min[i]),wind:Math.round(d.windspeed_10m_max[i]),dir:wdir(d.winddirection_10m_dominant?.[i]??0)};
+}
+
+async function loadWx(cb){
+  const unique=SITES.filter((s,i,a)=>a.findIndex(x=>x.id===s.id)===i);
+  for(let i=0;i<unique.length;i++){
+    const s=unique[i];
+    try{const d=await fetchWx(s);wx[s.id]=d;if(s.id==='hellisholar')wx['hellisholar2']=d;}
+    catch(e){console.warn('wx fail',s.id);}
+    cb(Math.round((i+1)/unique.length*80));
+  }
+}
+
+function initMap(){
+  map=L.map('map',{zoomControl:false,attributionControl:false}).setView([65,-18.5],6);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(map);
+  L.control.zoom({position:'topright'}).addTo(map);
+
+  const coords=SITES.map(s=>[s.lat,s.lon]);
+  L.polyline(coords,{color:'#38bdf8',weight:2.5,opacity:.55,dashArray:'7 5'}).addTo(map);
+
+  SITES.forEach((site,idx)=>{
+    if(site.id==='hellisholar2')return;
+    const cls=isToday(site)?'today':isPast(site)?'past':'';
+    const icon=L.divIcon({html:`<div class="cm ${cls}">${site.n}</div>`,iconSize:[30,30],iconAnchor:[15,15],className:''});
+    const m=L.marker([site.lat,site.lon],{icon}).addTo(map);
+    m.on('click',()=>{
+      const w=wxForDate(site.id,site.dstr);
+      const seg=SEGS[site.seg];
+      const wxhtml=w?`<div class="pw">${WXI[w.code]||'❓'} <b>${w.hi}°/${w.lo}°</b> · ${w.wind}m/s ${w.dir}</div>`:'<div class="pw" style="color:var(--muted)">Loading weather…</div>';
+      m.bindPopup(`<div class="pn">Night ${site.n} — ${site.name}</div><div class="pm">${site.date} · ${site.region}</div>${wxhtml}<div class="pp">${site.price} incl. elec+tax</div><div class="prb ${prclass(seg.status)}">${slabel(seg.status)}</div><div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:4px">${seg.note}</div>`,{maxWidth:260}).openPopup();
+    });
+  });
+}
+
+function buildRoute(){
+  const c=document.getElementById('ilist');c.innerHTML='';
+  SITES.forEach((site,idx)=>{
+    const w=wxForDate(site.id,site.dstr);
+    const tc=isToday(site)?'today':isPast(site)?'past':'';
+    const whtml=w?`<div class="wi">${WXI[w.code]||'❓'}</div><div class="wt">${w.hi}°</div>`:'<span class="spinner"></span>';
+    const seg=SEGS[site.seg];
+    const div=document.createElement('div');div.className='dc';
+    div.innerHTML=`<div class="dh"><div class="dn ${tc}">${site.n}</div><div class="di"><div class="dd">${site.date} · Night ${site.n}</div><div class="dc-name">${site.name}</div><div class="dr">${site.region}</div></div><div class="dw">${whtml}</div></div><div class="db" id="db${idx}"><hr class="divr"><div class="chips"><span class="chip cp">${site.price}</span><span class="chip cd">🚗 ${site.km}km</span><span class="chip ${seg.status==='open'?'co':'cw'}">${slabel(seg.status)}</span></div><div class="aurora"><span class="al">🌌 Aurora chance</span><span class="as">${stars(site.aurora)}</span></div><div class="sl">${site.sights.map(s=>`<div class="si">${s}</div>`).join('')}</div><div class="sn">${site.note}</div></div>`;
+    div.querySelector('.dh').addEventListener('click',()=>document.getElementById('db'+idx).classList.toggle('open'));
+    c.appendChild(div);
+  });
+}
+
+function buildWeather(){
+  const c=document.getElementById('wlist');c.innerHTML='';
+  SITES.forEach(site=>{
+    const d=wx[site.id];if(!d)return;
+    const days=d.time.slice(0,9).map((dt,i)=>{
+      const dow=new Date(dt+'T12:00').toLocaleDateString('en-US',{weekday:'short'}).slice(0,3).toUpperCase();
+      const isc=dt===site.dstr;
+      return `<div class="fday${isc?' camp':''}"><div class="fdow">${isc?'CAMP':dt===today()?'TODAY':dow}</div><div class="fic">${WXI[d.weathercode[i]]||'❓'}</div><div class="fhi">${Math.round(d.temperature_2m_max[i])}°</div><div class="flo">${Math.round(d.temperature_2m_min[i])}°</div><div class="fwd">${Math.round(d.windspeed_10m_max[i])}m/s</div></div>`;
+    }).join('');
+    const div=document.createElement('div');div.className='wloc';
+    div.innerHTML=`<div class="wlh"><div><div class="wln">${site.name}</div><div class="wlr">${site.region}</div></div><div class="wlni">Night ${site.n}</div></div><div class="fscroll">${days}</div>`;
+    c.appendChild(div);
+  });
+}
+
+function buildRoads(){
+  const c=document.getElementById('rcontent');
+  c.innerHTML=`<div class="sh">MARCH CONDITIONS OVERVIEW</div>
+<div class="alert green"><div class="ai">✅</div><div><div class="at">Ring Road (Route 1) — Open all year</div><div class="ab">Fully paved and maintained. Late March can bring ice patches at night and at higher elevations. 4WD recommended but not required on Ring Road.</div></div></div>
+<div class="alert yellow"><div class="ai">⚠️</div><div><div class="at">F-Roads — ALL CLOSED until May/June</div><div class="ab">None on your route. Do not attempt. They open when highland snow melts, typically late May–July 2026.</div></div></div>
+<div class="alert yellow"><div class="ai">🌬️</div><div><div class="at">Wind — always check before driving</div><div class="ab">Iceland's wind can be extreme, especially on Snæfellsnes and northern coasts. High-sided vehicles (campervans) are particularly vulnerable. Check safetravel.is daily.</div></div></div>
+<div class="sh" style="margin-top:4px">YOUR DAILY SEGMENTS</div>`;
+
+  Object.entries(SEGS).forEach(([k,seg])=>{
+    const site=SITES.find(s=>s.seg===k);
+    if(!site)return;
+    const div=document.createElement('div');div.className='seg';
+    div.innerHTML=`<div class="segrow"><div class="sname"><div class="sn1">${seg.name}</div><div class="sn2">${site.date} · ${seg.note}</div></div><div class="sbadge ${sclass(seg.status)}">${slabel(seg.status)}</div></div>`;
+    c.appendChild(div);
+  });
+
+  const links=[
+    {i:'🗺',t:'road.is — Official road map',s:'Real-time closures & conditions (Vegagerðin)',u:'https://www.road.is'},
+    {i:'⛅',t:'vedur.is — Met Office',s:'Icelandic Meteorological Office forecasts',u:'https://en.vedur.is'},
+    {i:'🛟',t:'safetravel.is — Safety alerts',s:'Active warnings, wind alerts, emergency info',u:'https://safetravel.is/travel-conditions/'},
+    {i:'📱',t:'112 Iceland App',s:'Emergency registration — download before you go',u:'https://www.safetravel.is/112-iceland-app'},
+  ];
+  const lh=document.createElement('div');
+  lh.innerHTML='<div class="sh" style="margin-top:4px">LIVE SOURCES — CHECK DAILY</div>';
+  c.appendChild(lh);
+  const ld=document.createElement('div');ld.className='elinks';
+  links.forEach(l=>{const a=document.createElement('a');a.className='elink';a.href=l.u;a.target='_blank';a.rel='noopener';a.innerHTML=`<div class="eli">${l.i}</div><div class="elt"><div class="elt1">${l.t}</div><div class="elt2">${l.s}</div></div><div class="ela">›</div>`;ld.appendChild(a);});
+  c.appendChild(ld);
+}
+
+// TABS
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.p).classList.add('active');
+    if(t.dataset.p==='mp')setTimeout(()=>map?.invalidateSize(),50);
+  });
+});
+
+// INIT
+async function init(){
+  const lf=document.getElementById('lf'),ls=document.getElementById('lstatus');
+  lf.style.width='10%';ls.textContent='Loading map tiles…';
+  await new Promise(r=>setTimeout(r,300));
+  ls.textContent='Fetching live weather (Open-Meteo)…';
+  await loadWx(p=>{lf.style.width=p+'%'});
+  lf.style.width='90%';ls.textContent='Building your route…';
+  await new Promise(r=>setTimeout(r,150));
+  document.getElementById('loading').style.display='none';
+  document.getElementById('app').style.display='flex';
+  initMap();buildRoute();buildWeather();buildRoads();
+}
+
+init();
+</script>
+</body>
+</html>
