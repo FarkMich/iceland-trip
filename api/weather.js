@@ -12,6 +12,7 @@ const STATIONS = [
   { id: '1473',  name: 'Selfoss',           lat: 63.93,  lon: -21.00, region: 'South' },
   { id: '6210',  name: 'Vík',               lat: 63.42,  lon: -19.01, region: 'South Coast' },
   { id: '1393',  name: 'Kirkjubæjarklaustur', lat: 63.78, lon: -18.06, region: 'South Coast' },
+  { id: '1400',  name: 'Fagurhólsmýri',     lat: 63.87,  lon: -16.64, region: 'South Coast' },
   { id: '799',   name: 'Höfn',              lat: 64.25,  lon: -15.20, region: 'East' },
   { id: '3477',  name: 'Egilsstaðir',       lat: 65.28,  lon: -14.40, region: 'East Fjords' },
   { id: '571',   name: 'Akureyri',          lat: 65.68,  lon: -18.10, region: 'North' },
