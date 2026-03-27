@@ -98,18 +98,25 @@ export default async function handler(req) {
                         block.match(/<id>([^<]+)<\/id>/)?.[1];
 
       const tempRaw = getId('T');
-      const windRaw = getId('W');   // mean wind speed m/s
-      const gustRaw = getId('F');   // wind gust m/s  
-      const maxGustRaw = getId('FX');
-      const dirRaw = getId('D');    // direction degrees
-      const pressRaw = getId('P');
-      const timeRaw = getId('time') || getId('obs_time');
+      // vedur.is uses 'F' for mean wind speed and 'FX' for max gust in their XML
+      // Try multiple field names as their schema varies
+      const windRaw = getId('F') || getId('W') || getId('FF');   // mean wind speed m/s
+      const gustRaw = getId('FX') || getId('FG');                // max gust m/s
+      const maxGustRaw = getId('FX') || getId('FG');
+      const dirRaw = getId('D') || getId('DD');                  // direction degrees
+      const pressRaw = getId('P') || getId('N');
+      const timeRaw = getId('time') || getId('obs_time') || getId('created');
 
       const windMs = windRaw && windRaw !== 'N/A' ? parseFloat(windRaw) : null;
       const gustMs = gustRaw && gustRaw !== 'N/A' ? parseFloat(gustRaw) : null;
       const maxGustMs = maxGustRaw && maxGustRaw !== 'N/A' ? parseFloat(maxGustRaw) : null;
       const dirDeg = dirRaw && dirRaw !== 'N/A' ? parseFloat(dirRaw) : null;
       const temp = tempRaw && tempRaw !== 'N/A' ? parseFloat(tempRaw) : null;
+
+      // Debug: capture raw tag names from this block (first station only, remove later)
+      const rawTags = stationMatches.indexOf(match) === 0
+        ? [...block.matchAll(/<([A-Za-z0-9_]+)[^>]*>/g)].map(m=>m[1]).filter((v,i,a)=>a.indexOf(v)===i).join(',')
+        : undefined;
 
       // Find matching station metadata
       const station = STATIONS.find(s => String(s.id) === String(stationId));
@@ -136,6 +143,7 @@ export default async function handler(req) {
           campervanWarning: windMs !== null && windMs >= 14,
         },
         pressure: pressRaw ? parseFloat(pressRaw) : null,
+        _debug: rawTags,
       };
     }).filter(o => o.stationId); // Remove any failed parses
 
