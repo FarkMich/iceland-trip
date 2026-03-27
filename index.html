@@ -204,6 +204,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
 <script>
 const SITES=[
+  {id:'hellisholar',name:'Hellishólar Campsite',region:'South Iceland',lat:63.7253,lon:-20.0384,price:'~1,800 kr/p',km:130,sights:['Seljalandsfoss 15min','Skógafoss 30min','Eyjafjallajökull views'],note:'Year-round. 25-year age minimum. Restaurant on site. 90min from Keflavík airport.',aurora:3,season:'year'},
   // REYKJAVIK & CAPITAL REGION
   {id:'reykjavik',name:'Reykjavík Camping',region:'Capital Region',lat:64.1347,lon:-21.8936,price:'~1,800 kr/p',km:0,sights:['City centre 3km','Hallgrímskirkja church','Harpa concert hall'],note:'Year-round. Large site, central location.',aurora:2,season:'year'},
   {id:'vogar',name:'Vogar Campsite',region:'Reykjanes Peninsula',lat:63.9973,lon:-22.3656,price:'~1,500 kr/p',km:45,sights:['Blue Lagoon nearby','Reykjanes lava fields','Keflavík airport 15min'],note:'Year-round. Convenient for airport.',aurora:3,season:'year'},
@@ -226,6 +227,10 @@ const SITES=[
   {id:'cja',name:'CJA Camping, Laugar',region:'North Iceland',lat:65.7017,lon:-17.3498,price:'~1,600 kr/p',km:780,sights:['Goðafoss 30min','Laugar geothermal pool','Private hedged pitches'],note:'Year-round. Legendary hosts. Private pitches.',aurora:5,season:'year'},
   {id:'hamrar',name:'Hamrar, Akureyri',region:'North Iceland · Akureyri',lat:65.6700,lon:-18.0750,price:'~1,900 kr/p',km:830,sights:['Kjarnaskógur forest walks','Akureyri town 3km','Hlíðafjall ski slope nearby'],note:'Year-round. Best facilities in North Iceland.',aurora:4,season:'year'},
   // NORTHWEST & WEST
+  {id:'blonduos',name:'Gladheimar, Blönduós',region:'Northwest Iceland',lat:65.6624,lon:-20.2891,price:'~1,500 kr/p',km:240,sights:['River Blanda salmon fishing','Halfway Reykjavík-Akureyri','Textile Museum'],note:'Year-round. Cottages + camping. Hot tubs. Exactly halfway between Reykjavík and Akureyri.',aurora:4,season:'year'},
+  {id:'budardalur',name:'Búðardalur Campsite',region:'West Iceland · Dalir',lat:65.1000,lon:-21.7833,price:'~1,500 kr/p',km:160,sights:['Leif Eiríksson Centre (Viking history)','Dalahestar horse rental','Westfjords access via Rt 60'],note:'Year-round. Well-sheltered grove. Shop, restaurant 250m.',aurora:3,season:'year'},
+  {id:'husafell',name:'Húsafell Campsite',region:'West Iceland',lat:64.7028,lon:-20.9028,price:'~1,800 kr/p',km:115,sights:['Hraunfossar & Barnafoss waterfalls nearby','Krauma geothermal spa','Langjökull glacier access'],note:'Year-round. Beautiful lava landscape. Full facilities.',aurora:4,season:'year'},
+  {id:'snorrastadir',name:'Snorrastaðir Campsite',region:'West Iceland · Borgarfjörður',lat:64.7736,lon:-22.3012,price:'~1,800 kr/p',km:75,sights:['Eldborg volcanic crater hike at camp','Borgarnes 25min','Snæfellsnes 45min'],note:'Year-round. Great aurora spot. Baby goats in spring.',aurora:4,season:'year'},
   {id:'stykkisholmur',name:'Stykkishólmur Campsite',region:'Snæfellsnes',lat:65.0712,lon:-22.7312,price:'~1,800 kr/p',km:170,sights:['Snæfellsnes Peninsula','Ferry to Westfjords','Library of Water art installation'],note:'Year-round. Gateway to Snæfellsnes.',aurora:3,season:'year'},
   {id:'garður',name:'Garður Campsite',region:'Reykjanes Peninsula',lat:64.0830,lon:-22.6918,price:'~1,500 kr/p',km:50,sights:['Two lighthouses','Birdwatching','Keflavík airport 10min'],note:'Year-round. Great bird spotting.',aurora:3,season:'year'},
 ];
