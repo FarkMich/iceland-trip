@@ -1,648 +1,1221 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0d1b2a">
-<title>🧊 Iceland Travel Map</title>
-<link rel="manifest" href="/manifest.json">
-<meta name="description" content="Live Iceland travel map — roads, wind, campsites, waterfalls and attractions for your Ring Road adventure.">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css"/>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap">
-<style>
-:root{--bg:#0d1b2a;--bg2:#0f2235;--bg3:#162c45;--border:#1a3650;--accent:#38bdf8;--green:#22c55e;--yellow:#f59e0b;--red:#ef4444;--amber:#f97316;--purple:#a78bfa;--text:#ddeeff;--muted:#557a99;--card:#0b1e30;--font:'Plus Jakarta Sans',sans-serif;--mono:'DM Mono',monospace;--r:14px}
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font)}
-#loading{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
-.ll{font-size:52px;animation:bob 2s ease-in-out infinite}
-@keyframes bob{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-12px) rotate(5deg)}}
-.lt{font-size:20px;font-weight:700;letter-spacing:-.5px}.ls{font-size:12px;color:var(--muted);font-family:var(--mono)}
-.lb{width:180px;height:2px;background:var(--bg3);border-radius:2px;overflow:hidden}
-.lf{height:100%;background:linear-gradient(90deg,var(--accent),#7dd3fc);width:0%;transition:width .3s}
-#app{height:100%;display:flex;flex-direction:column}
-#topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 16px 10px;padding-top:calc(12px + env(safe-area-inset-top,0px));display:flex;align-items:center;gap:10px;flex-shrink:0}
-.ti{font-size:22px}.tt h1{font-size:15px;font-weight:700;letter-spacing:-.3px}.tt p{font-size:11px;color:var(--muted);font-family:var(--mono)}
-.sp{flex:1}.ld{width:7px;height:7px;border-radius:50%;background:var(--green);animation:lp 2s infinite}
-@keyframes lp{0%,100%{opacity:1;box-shadow:0 0 0 0 #22c55e66}50%{opacity:.6;box-shadow:0 0 0 5px transparent}}
-.lv{font-size:10px;color:var(--green);font-family:var(--mono);font-weight:500}
-#tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0}
-.tab{flex:1;padding:8px 4px 7px;text-align:center;cursor:pointer;font-size:9px;color:var(--muted);font-family:var(--mono);font-weight:500;border-bottom:2px solid transparent;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:2px;letter-spacing:.3px}
-.tab .ti2{font-size:17px}.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-#content{flex:1;overflow:hidden;position:relative}
-.panel{position:absolute;inset:0;overflow-y:auto;display:none;-webkit-overflow-scrolling:touch;padding-top:4px}
-.panel.active{display:block}
-#mp{overflow:hidden;display:none;flex-direction:column}
-#mp.active{display:flex}
-#map{flex:1;min-height:0}
-#map-controls{position:absolute;bottom:16px;left:12px;z-index:500;display:flex;flex-direction:column;gap:6px}
-.map-toggle{background:rgba(13,27,42,.9);border:1px solid var(--border);border-radius:10px;padding:7px 12px;font-size:11px;font-family:var(--mono);font-weight:500;cursor:pointer;display:flex;align-items:center;gap:7px;color:var(--muted);transition:all .2s;white-space:nowrap;backdrop-filter:blur(4px)}
-.map-toggle.on{color:var(--text);border-color:rgba(56,189,248,.5)}
-.map-toggle .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;opacity:.5;transition:opacity .2s}
-.map-toggle.on .dot{opacity:1}
-.dot-camp{background:var(--accent)}.dot-attr{background:var(--amber)}.dot-wind{background:#a78bfa}.dot-roads{background:var(--green)}
-/* Wind banner */
-.wind-banner{margin:8px 12px 0;border-radius:var(--r);padding:10px 14px;display:flex;align-items:center;gap:10px;border:1px solid}
-.wind-banner.ok{background:#081a10;border-color:var(--green);color:var(--green)}
-.wind-banner.caution{background:#1a180a;border-color:var(--yellow);color:var(--yellow)}
-.wind-banner.warning{background:#1a100a;border-color:var(--amber);color:var(--amber)}
-.wind-banner.danger{background:#1a0808;border-color:var(--red);color:var(--red)}
-.wind-banner.unknown{background:var(--bg3);border-color:var(--border);color:var(--muted)}
-.wb-icon{font-size:20px;flex-shrink:0}
-.wb-text{flex:1}.wb-title{font-size:12px;font-weight:600}.wb-sub{font-size:10px;font-family:var(--mono);opacity:.8;margin-top:1px}
-.wb-time{font-size:9px;font-family:var(--mono);opacity:.5;margin-left:auto;white-space:nowrap}
-/* Wind station cards */
-.wstation{margin:0 12px 8px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;display:flex;align-items:center;gap:12px}
-.ws-region{font-size:9px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.ws-name{font-size:13px;font-weight:600;margin:2px 0}
-.ws-wind{text-align:right;flex-shrink:0}
-.ws-speed{font-size:18px;font-weight:700;font-family:var(--mono)}
-.ws-dir{font-size:10px;font-family:var(--mono);color:var(--muted)}
-.ws-label{font-size:9px;font-family:var(--mono);margin-top:2px}
-.ws-ok{color:var(--green)}.ws-caution{color:var(--yellow)}.ws-warning{color:var(--amber)}.ws-danger{color:var(--red)}.ws-unknown{color:var(--muted)}
-.ws-camper{display:inline-block;font-size:9px;font-family:var(--mono);background:#1a100a;color:var(--amber);border:1px solid #3a2010;border-radius:6px;padding:1px 6px;margin-top:3px}
-/* Live roads */
-.roads-live-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-family:var(--mono);color:var(--green);margin:0 12px 8px}
-.roads-live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:lp 2s infinite;flex-shrink:0}
-.route-row{margin:0 12px 8px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;display:flex;align-items:center;gap:10px}
-.route-name{flex:1;font-size:13px;font-weight:600}.route-cond{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px}
-/* Closures */
-.closure-item{margin:0 12px 6px;background:#1a0808;border:1px solid #3a1010;border-radius:var(--r);padding:10px 14px}
-.closure-road{font-size:12px;font-weight:600;color:var(--red);margin-bottom:3px}
-.closure-detail{font-size:11px;color:var(--muted);font-family:var(--mono)}
-/* Fallback notice */
-.data-fallback{margin:0 12px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;font-size:11px;color:var(--muted);font-family:var(--mono);text-align:center}
-.leaflet-popup-content-wrapper{background:var(--bg2)!important;color:var(--text)!important;border:1px solid var(--border)!important;border-radius:14px!important;box-shadow:0 8px 32px rgba(0,0,0,.7)!important}
-.leaflet-popup-tip{background:var(--bg2)!important}
-.leaflet-popup-content{margin:12px 14px!important;font-family:var(--font)!important;min-width:190px}
-.pn{font-size:13px;font-weight:700;margin-bottom:3px}
-.pm{font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:6px}
-.pw{font-size:13px;display:flex;align-items:center;gap:6px;margin-bottom:4px}
-.pp{font-size:11px;color:var(--accent);font-family:var(--mono)}
-.prb{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-family:var(--mono);font-weight:600;padding:3px 9px;border-radius:8px;margin-top:6px}
-.ro{background:#0a2a14;color:var(--green)}.rc{background:#2a200a;color:var(--yellow)}.rk{background:#0a1e30;color:var(--accent)}
-.attr-typebadge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-family:var(--mono);font-weight:600;padding:3px 9px;border-radius:8px;margin-bottom:7px}
-.at-waterfall{background:#0a1e36;color:#7dd3fc}.at-glacier{background:#0e1e2e;color:#bfdbfe}
-.at-beach{background:#1a1208;color:#fcd34d}.at-geo{background:#1a0e08;color:#fdba74}
-.at-lagoon{background:#081e1e;color:#5eead4}.at-historic{background:#1a0e1a;color:#d8b4fe}
-.at-hike{background:#0a1e10;color:#86efac}.at-nature{background:#0e180a;color:#bbf7d0}
-.sh{padding:12px 16px 6px;font-size:10px;font-family:var(--mono);color:var(--muted);font-weight:500;letter-spacing:1px;text-transform:uppercase}
-.dc{margin:0 12px 10px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:border-color .15s}
-.dc:active{border-color:var(--accent)}
-.dh{padding:12px 14px;display:flex;align-items:center;gap:10px}
-.dn{width:34px;height:34px;border-radius:9px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;font-family:var(--mono);color:var(--accent);flex-shrink:0}
-.dn.past{color:var(--muted);background:var(--bg2)}.dn.today{background:var(--accent);color:var(--bg)}
-.di{flex:1;min-width:0}.dd{font-size:10px;font-family:var(--mono);color:var(--muted)}
-.dc-name{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dr{font-size:11px;color:var(--muted)}
-.dw{text-align:right;flex-shrink:0}
-.wt{font-size:19px;font-weight:300;font-family:var(--mono)}.wi{font-size:19px}
-.db{padding:0 14px 12px;display:none}.db.open{display:block}
-.divr{border:none;border-top:1px solid var(--border);margin-bottom:10px}
-.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
-.chip{font-size:10px;font-family:var(--mono);font-weight:500;padding:3px 9px;border-radius:10px}
-.cp{background:#081e30;color:var(--accent);border:1px solid #143550}
-.cd{background:#101e0a;color:#86efac;border:1px solid #1a3a10}
-.cw{background:#1a180a;color:var(--yellow);border:1px solid #3a3010}
-.co{background:#081e14;color:var(--green);border:1px solid #103a20}
-.aurora{background:linear-gradient(135deg,#0d0020,#1a0035,#2a0860,#1a0035,#0d0020);border-radius:10px;padding:8px 12px;margin-bottom:9px;display:flex;align-items:center;justify-content:space-between}
-.al{font-size:11px;font-family:var(--mono);color:#c084fc}.as{letter-spacing:3px;font-size:13px}
-.sl{display:flex;flex-direction:column;gap:3px;margin-bottom:8px}
-.si{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--muted)}
-.si::before{content:'→';color:var(--accent);flex-shrink:0}
-.snn{font-size:11px;color:var(--muted);font-style:italic;margin-top:4px;padding-left:14px}
-.attr-card{margin:0 12px 8px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px}
-.attr-card-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px}
-.attr-icon{font-size:22px;flex-shrink:0;margin-top:1px}
-.attr-name{font-size:13px;font-weight:600}.attr-sub{font-size:11px;color:var(--muted)}
-.attr-desc{font-size:12px;color:var(--muted);line-height:1.55}
-.attr-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
-.tag{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:8px;font-weight:500}
-.tag-day{background:#081e30;color:var(--accent);border:1px solid #143550}
-.tag-time{background:#0a1a10;color:#86efac;border:1px solid #1a3a10}
-.tag-must{background:#16082e;color:var(--purple);border:1px solid #2a1450}
-.wloc{margin:0 12px 10px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
-.wlh{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
-.wln{font-size:13px;font-weight:600}.wlr{font-size:11px;color:var(--muted)}.wlni{font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:auto}
-.fscroll{display:flex;gap:8px;padding:10px 14px;overflow-x:auto;scrollbar-width:none}
-.fscroll::-webkit-scrollbar{display:none}
-.fday{flex-shrink:0;width:54px;text-align:center;padding:8px 4px;background:var(--bg3);border-radius:10px}
-.fday.camp{background:#0a2a3a;border:1px solid #1a5070}
-.fdow{font-size:9px;font-family:var(--mono);color:var(--muted);margin-bottom:3px;text-transform:uppercase}
-.fday.camp .fdow{color:var(--accent)}
-.fic{font-size:20px;margin-bottom:3px}
-.fhi{font-size:14px;font-weight:700;font-family:var(--mono)}.flo{font-size:10px;color:var(--muted);font-family:var(--mono)}
-.fday.camp .flo{color:#7dd3fc}
-.fwd{font-size:9px;color:var(--muted);font-family:var(--mono);margin-top:2px}
-.ralert{margin:0 12px 10px;border-radius:var(--r);padding:12px 14px;display:flex;gap:10px;border-left:3px solid}
-.ralert.green{background:#081a10;border-color:var(--green)}.ralert.yellow{background:#1a1504;border-color:var(--yellow)}
-.rai{font-size:20px;flex-shrink:0}.rat{font-size:13px;font-weight:600;margin-bottom:3px}.rab{font-size:12px;color:var(--muted);line-height:1.5}
-.seg{margin:0 12px 8px}
-.segrow{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;display:flex;align-items:center;gap:10px}
-.sname{flex:1}.sn1{font-size:12px;font-weight:500}.sn2{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px}
-.sbadge{font-size:10px;font-family:var(--mono);font-weight:600;padding:4px 10px;border-radius:9px;flex-shrink:0}
-.so{background:#081e14;color:var(--green)}.sc{background:#1a1504;color:var(--yellow)}.sk{background:#081422;color:var(--accent)}
-.elinks{margin:0 12px 16px;display:flex;flex-direction:column;gap:8px}
-.elink{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--text);cursor:pointer}
-.elink:active{background:var(--bg2)}
-.eli{font-size:22px}.elt .elt1{font-size:13px;font-weight:600}.elt .elt2{font-size:11px;color:var(--muted)}.ela{margin-left:auto;color:var(--muted);font-size:20px;font-weight:300}
-.cm{width:32px;height:32px;border-radius:50%;background:var(--bg3);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 12px rgba(0,0,0,.5);cursor:pointer}
-.am{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 2px 10px rgba(0,0,0,.5);cursor:pointer}
-.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.bp{height:calc(24px + env(safe-area-inset-bottom,0px))}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d1117" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Iceland Trip" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>Iceland Ring Road</title>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    /* ============================================================
+       TOKENS & RESET
+    ============================================================ */
+    :root {
+      --bg:          #0d1117;
+      --surface:     #161b22;
+      --surface2:    #21262d;
+      --border:      #30363d;
+      --text:        #e6edf3;
+      --text-muted:  #8b949e;
+      --accent:      #58a6ff;
+      --accent-dim:  rgba(88,166,255,.15);
+      --green:       #3fb950;
+      --yellow:      #d29922;
+      --red:         #f85149;
+      --orange:      #e3622e;
+
+      --nav-h:       64px;
+      --status-h:    48px;
+      --safe-top:    env(safe-area-inset-top, 0px);
+      --safe-bot:    env(safe-area-inset-bottom, 0px);
+      --safe-left:   env(safe-area-inset-left, 0px);
+      --safe-right:  env(safe-area-inset-right, 0px);
+      --radius:      12px;
+      --radius-sm:   8px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button { cursor: pointer; border: none; background: none; color: inherit; font: inherit; }
+    a { color: var(--accent); text-decoration: none; }
+
+    /* ============================================================
+       LAYOUT SHELL
+    ============================================================ */
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      padding-top: var(--safe-top);
+      padding-bottom: var(--safe-bot);
+    }
+
+    /* ---- Status Bar ---- */
+    #status-bar {
+      flex-shrink: 0;
+      height: var(--status-h);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 16px;
+      font-size: 13px;
+      overflow: hidden;
+    }
+    #status-bar .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      white-space: nowrap;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    #status-bar .status-pill .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+    #status-bar .status-pill .dot.warn { background: var(--yellow); }
+    #status-bar .status-pill .dot.danger { background: var(--red); }
+    #status-bar .status-sep { color: var(--border); }
+    #status-bar .status-time { color: var(--text-muted); margin-left: auto; font-size: 11px; }
+
+    /* ---- Content Area ---- */
+    #content {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+    }
+
+    .tab-panel {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .tab-panel.active {
+      display: flex;
+    }
+
+    /* ---- Bottom Nav ---- */
+    #bottom-nav {
+      flex-shrink: 0;
+      height: var(--nav-h);
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: stretch;
+      padding-left: var(--safe-left);
+      padding-right: var(--safe-right);
+    }
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 8px 4px;
+      border-radius: 0;
+      transition: background .15s, color .15s;
+      color: var(--text-muted);
+      position: relative;
+    }
+    .nav-btn.active {
+      color: var(--accent);
+    }
+    .nav-btn.active::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 20%; right: 20%;
+      height: 2px;
+      background: var(--accent);
+      border-radius: 0 0 2px 2px;
+    }
+    .nav-btn svg { width: 22px; height: 22px; }
+    .nav-btn span { font-size: 10px; font-weight: 600; letter-spacing: .4px; text-transform: uppercase; }
+
+    /* ============================================================
+       SCROLLABLE LIST PANELS
+    ============================================================ */
+    .panel-scroll {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+    .panel-scroll::-webkit-scrollbar { width: 3px; }
+    .panel-scroll::-webkit-scrollbar-track { background: transparent; }
+    .panel-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .panel-header {
+      padding: 16px 16px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ---- Cards ---- */
+    .card {
+      margin: 8px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color .15s;
+    }
+    .card:active { border-color: var(--accent); }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 14px;
+    }
+    .card-icon {
+      width: 40px; height: 40px;
+      border-radius: var(--radius-sm);
+      background: var(--surface2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .card-body { flex: 1; min-width: 0; }
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .card-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 20px;
+      flex-shrink: 0;
+      align-self: flex-start;
+    }
+    .badge-green  { background: rgba(63,185,80,.15);  color: var(--green); }
+    .badge-yellow { background: rgba(210,153,34,.15); color: var(--yellow); }
+    .badge-red    { background: rgba(248,81,73,.15);  color: var(--red); }
+    .badge-blue   { background: var(--accent-dim);    color: var(--accent); }
+
+    .card-actions {
+      display: flex;
+      border-top: 1px solid var(--border);
+    }
+    .card-action-btn {
+      flex: 1;
+      padding: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      text-align: center;
+      transition: background .15s;
+    }
+    .card-action-btn:active { background: var(--accent-dim); }
+    .card-action-btn + .card-action-btn { border-left: 1px solid var(--border); }
+
+    /* ============================================================
+       MAP TAB
+    ============================================================ */
+    #map-panel { position: relative; }
+
+    #map {
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* Floating controls */
+    .map-fab-group {
+      position: absolute;
+      right: 14px;
+      bottom: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 1000;
+    }
+    .map-fab {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.4);
+      transition: background .15s, transform .1s;
+    }
+    .map-fab:active { transform: scale(.92); background: var(--surface2); }
+    .map-fab svg { width: 20px; height: 20px; }
+
+    .map-layer-toggle {
+      position: absolute;
+      left: 14px;
+      bottom: 14px;
+      z-index: 1000;
+      display: flex;
+      gap: 6px;
+    }
+    .layer-btn {
+      padding: 8px 12px;
+      border-radius: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      box-shadow: 0 4px 12px rgba(0,0,0,.4);
+      transition: all .15s;
+    }
+    .layer-btn.on {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Bottom sheet for map popups */
+    #map-sheet {
+      position: absolute;
+      bottom: -100%;
+      left: 0; right: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-radius: var(--radius) var(--radius) 0 0;
+      z-index: 2000;
+      transition: bottom .3s cubic-bezier(.4,0,.2,1);
+      padding-bottom: 8px;
+      box-shadow: 0 -8px 32px rgba(0,0,0,.5);
+    }
+    #map-sheet.open { bottom: 0; }
+    .sheet-handle {
+      width: 36px; height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 10px auto 14px;
+    }
+    .sheet-content { padding: 0 16px 16px; }
+    .sheet-title { font-size: 17px; font-weight: 700; }
+    .sheet-sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+    .sheet-actions { display: flex; gap: 8px; margin-top: 14px; }
+    .sheet-btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      text-align: center;
+      transition: opacity .15s;
+    }
+    .sheet-btn:active { opacity: .7; }
+    .sheet-btn-primary { background: var(--accent); color: #0d1117; }
+    .sheet-btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+
+    /* Leaflet overrides for dark */
+    .leaflet-control-zoom a {
+      background: var(--surface) !important;
+      color: var(--text) !important;
+      border-color: var(--border) !important;
+    }
+    .leaflet-popup-content-wrapper,
+    .leaflet-popup-tip {
+      background: var(--surface) !important;
+      color: var(--text) !important;
+      border: 1px solid var(--border) !important;
+      box-shadow: 0 8px 24px rgba(0,0,0,.5) !important;
+    }
+    .leaflet-container { font-family: inherit !important; }
+
+    /* ============================================================
+       WEATHER TAB
+    ============================================================ */
+    .weather-hero {
+      padding: 20px 16px;
+      background: linear-gradient(135deg, #0d1b2a 0%, #162032 100%);
+      border-bottom: 1px solid var(--border);
+    }
+    .weather-station-selector {
+      display: flex;
+      gap: 8px;
+      padding: 12px 12px 4px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .weather-station-selector::-webkit-scrollbar { display: none; }
+    .station-chip {
+      flex-shrink: 0;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      transition: all .15s;
+    }
+    .station-chip.active {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .weather-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 12px;
+    }
+    .weather-stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+    .weather-stat-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .8px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .weather-stat-value {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+    }
+    .weather-stat-unit {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-left: 3px;
+    }
+
+    /* wind color values */
+    .wind-calm   { color: var(--green); }
+    .wind-mod    { color: var(--yellow); }
+    .wind-strong { color: var(--orange); }
+    .wind-storm  { color: var(--red); }
+
+    /* ============================================================
+       ROADS TAB
+    ============================================================ */
+    .alert-banner {
+      margin: 8px 12px;
+      padding: 14px;
+      border-radius: var(--radius);
+      border-left: 3px solid;
+      background: var(--surface);
+      border-color: var(--border);
+    }
+    .alert-banner.closed  { border-color: var(--red);    background: rgba(248,81,73,.08); }
+    .alert-banner.warning { border-color: var(--yellow); background: rgba(210,153,34,.08); }
+    .alert-banner.info    { border-color: var(--accent); background: var(--accent-dim); }
+    .alert-title { font-size: 14px; font-weight: 600; }
+    .alert-desc  { font-size: 12px; color: var(--text-muted); margin-top: 4px; line-height: 1.5; }
+    .alert-meta  { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+
+    /* ============================================================
+       PULL-TO-REFRESH
+    ============================================================ */
+    .ptr-spinner {
+      text-align: center;
+      padding: 12px;
+      color: var(--text-muted);
+      font-size: 12px;
+      display: none;
+    }
+    .ptr-spinner.visible { display: block; }
+
+    /* ============================================================
+       LOADING / ERROR STATES
+    ============================================================ */
+    .loading-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+    .spinner {
+      width: 28px; height: 28px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+    .empty-state .icon { font-size: 36px; margin-bottom: 10px; }
+
+    /* ============================================================
+       INSTALL BANNER
+    ============================================================ */
+    #install-banner {
+      position: fixed;
+      bottom: calc(var(--nav-h) + var(--safe-bot) + 8px);
+      left: 12px; right: 12px;
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.5);
+      z-index: 9999;
+      transform: translateY(calc(100% + 80px));
+      transition: transform .4s cubic-bezier(.4,0,.2,1);
+    }
+    #install-banner.show { transform: translateY(0); }
+    #install-banner .icon { font-size: 28px; flex-shrink: 0; }
+    #install-banner .text { flex: 1; min-width: 0; }
+    #install-banner .text strong { display: block; font-size: 14px; }
+    #install-banner .text small { font-size: 12px; color: var(--text-muted); }
+    #install-btn {
+      padding: 8px 14px;
+      background: var(--accent);
+      color: #0d1117;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    #install-dismiss {
+      padding: 8px;
+      color: var(--text-muted);
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    /* ============================================================
+       OFFLINE TOAST
+    ============================================================ */
+    #offline-toast {
+      position: fixed;
+      top: calc(var(--safe-top) + var(--status-h) + 8px);
+      left: 50%; transform: translateX(-50%) translateY(-80px);
+      background: var(--yellow);
+      color: #0d1117;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 8px 18px;
+      border-radius: 20px;
+      z-index: 9999;
+      transition: transform .3s;
+      white-space: nowrap;
+    }
+    #offline-toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ============================================================
+       RESPONSIVE DESKTOP (secondary)
+    ============================================================ */
+    @media (min-width: 640px) {
+      #bottom-nav { justify-content: center; }
+      .nav-btn { max-width: 100px; }
+      .weather-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+  </style>
 </head>
 <body>
+<div id="app">
 
-<div id="loading">
-  <div class="ll">🧊</div>
-  <div class="lt">Iceland Travel Map</div>
-  <div class="ls">Ring Road · Live Roads &amp; Weather</div>
-  <div class="lb"><div class="lf" id="lf"></div></div>
-  <div class="ls" id="lstatus">Loading live data…</div>
-</div>
+  <!-- Status Bar -->
+  <div id="status-bar">
+    <div class="status-pill" id="wind-status">
+      <div class="dot" id="wind-dot"></div>
+      <span id="wind-label">Wind –</span>
+    </div>
+    <div class="status-pill" id="road-status">
+      <div class="dot" id="road-dot"></div>
+      <span id="road-label">Roads –</span>
+    </div>
+    <div class="status-time" id="last-updated">Updating…</div>
+  </div>
 
-<div id="app" style="display:none">
-  <div id="topbar">
-    <div class="ti">🧊</div>
-    <div class="tt"><h1>Iceland Travel Map</h1><p id="topbar-sub">Ring Road · Live Data</p></div>
-    <div class="sp"></div>
-    <div class="ld" id="live-dot"></div>&nbsp;<div class="lv" id="live-label">LIVE</div>
-  </div>
-  <div id="tabs">
-    <div class="tab active" data-p="mp"><span class="ti2">🗺</span>MAP</div>
-    <div class="tab" data-p="ip"><span class="ti2">⛺</span>CAMPSITES</div>
-    <div class="tab" data-p="ap"><span class="ti2">🏔</span>SIGHTS</div>
-    <div class="tab" data-p="wp"><span class="ti2">🌦</span>WEATHER</div>
-    <div class="tab" data-p="rp"><span class="ti2">🚧</span>ROADS</div>
-  </div>
+  <!-- Content -->
   <div id="content">
-    <div id="mp" class="panel active">
+
+    <!-- ===== MAP ===== -->
+    <div class="tab-panel active" id="panel-map">
       <div id="map"></div>
-      <div id="map-controls">
-        <div class="map-toggle on" id="tog-camp" onclick="toggleLayer('camp')">
-          <div class="dot dot-camp"></div>Campsites
-        </div>
-        <div class="map-toggle on" id="tog-attr" onclick="toggleLayer('attr')">
-          <div class="dot dot-attr"></div>Sights
-        </div>
-        <div class="map-toggle" id="tog-wind" onclick="toggleLayer('wind')">
-          <div class="dot dot-wind"></div>Wind
+
+      <!-- Layer toggles -->
+      <div class="map-layer-toggle">
+        <button class="layer-btn on" id="btn-wind-layer" onclick="toggleWindLayer()">💨 Wind</button>
+        <button class="layer-btn on" id="btn-road-layer" onclick="toggleRoadLayer()">🛣️ Roads</button>
+      </div>
+
+      <!-- FABs -->
+      <div class="map-fab-group">
+        <button class="map-fab" onclick="locateMe()" title="My location">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/>
+            <circle cx="12" cy="12" r="9" stroke-dasharray="4 2"/>
+          </svg>
+        </button>
+        <button class="map-fab" onclick="fitRingRoad()" title="Fit Iceland">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Bottom Sheet -->
+      <div id="map-sheet">
+        <div class="sheet-handle" onclick="closeSheet()"></div>
+        <div class="sheet-content">
+          <div class="sheet-title" id="sheet-title">–</div>
+          <div class="sheet-sub" id="sheet-sub">–</div>
+          <div class="sheet-actions" id="sheet-actions"></div>
         </div>
       </div>
     </div>
-    <div id="ip" class="panel"><div id="ilist"></div><div class="bp"></div></div>
-    <div id="ap" class="panel"><div id="alist"></div><div class="bp"></div></div>
-    <div id="wp" class="panel"><div id="wlist"></div><div class="bp"></div></div>
-    <div id="rp" class="panel"><div id="rcontent"></div><div class="bp"></div></div>
+
+    <!-- ===== CAMPSITES ===== -->
+    <div class="tab-panel" id="panel-campsites">
+      <div class="panel-header">23 Year-Round Campsites</div>
+      <div class="panel-scroll" id="camp-list">
+        <div class="loading-state"><div class="spinner"></div>Loading…</div>
+      </div>
+    </div>
+
+    <!-- ===== SIGHTS ===== -->
+    <div class="tab-panel" id="panel-sights">
+      <div class="panel-header">17 Curated Attractions</div>
+      <div class="panel-scroll" id="sights-list">
+        <div class="loading-state"><div class="spinner"></div>Loading…</div>
+      </div>
+    </div>
+
+    <!-- ===== WEATHER ===== -->
+    <div class="tab-panel" id="panel-weather">
+      <div class="panel-scroll">
+        <div class="weather-station-selector" id="station-chips"></div>
+        <div class="weather-grid" id="weather-grid">
+          <div class="loading-state" style="grid-column:1/-1"><div class="spinner"></div>Fetching stations…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ROADS ===== -->
+    <div class="tab-panel" id="panel-roads">
+      <div class="panel-header">Live Road Status — safetravel.is</div>
+      <div class="panel-scroll" id="roads-list">
+        <div class="loading-state"><div class="spinner"></div>Loading alerts…</div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- Bottom Nav -->
+  <nav id="bottom-nav">
+    <button class="nav-btn active" data-tab="map" onclick="switchTab('map',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
+        <line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/>
+      </svg>
+      <span>Map</span>
+    </button>
+    <button class="nav-btn" data-tab="campsites" onclick="switchTab('campsites',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 20L12 4 2 20h20z"/><line x1="12" y1="4" x2="12" y2="20"/>
+      </svg>
+      <span>Camps</span>
+    </button>
+    <button class="nav-btn" data-tab="sights" onclick="switchTab('sights',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"/><path d="M12 1v4m0 14v4M1 12h4m14 0h4"/>
+        <path d="M4.22 4.22l2.83 2.83m9.9 9.9l2.83 2.83M19.78 4.22l-2.83 2.83m-9.9 9.9l-2.83 2.83"/>
+      </svg>
+      <span>Sights</span>
+    </button>
+    <button class="nav-btn" data-tab="weather" onclick="switchTab('weather',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/>
+      </svg>
+      <span>Weather</span>
+    </button>
+    <button class="nav-btn" data-tab="roads" onclick="switchTab('roads',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v9a2 2 0 01-2 2h-2"/>
+        <circle cx="9" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>
+      </svg>
+      <span>Roads</span>
+    </button>
+  </nav>
+
+</div><!-- /app -->
+
+<!-- Install Banner -->
+<div id="install-banner">
+  <div class="icon">🏔️</div>
+  <div class="text">
+    <strong>Add to Home Screen</strong>
+    <small>Offline maps + live alerts</small>
   </div>
+  <button id="install-btn" onclick="doInstall()">Install</button>
+  <button id="install-dismiss" onclick="dismissInstall()">×</button>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
+<!-- Offline Toast -->
+<div id="offline-toast">⚡ No connection — showing cached data</div>
+
 <script>
-const SITES=[
-  {id:'hellisholar',name:'Hellishólar Campsite',region:'South Iceland',lat:63.7253,lon:-20.0384,price:'~1,800 kr/p',km:130,sights:['Seljalandsfoss 15min','Skógafoss 30min','Eyjafjallajökull views'],note:'Year-round. 25-year age minimum. Restaurant on site. 90min from Keflavík airport.',aurora:3,season:'year'},
-  // REYKJAVIK & CAPITAL REGION
-  {id:'reykjavik',name:'Reykjavík Camping',region:'Capital Region',lat:64.1347,lon:-21.8936,price:'~1,800 kr/p',km:0,sights:['City centre 3km','Hallgrímskirkja church','Harpa concert hall'],note:'Year-round. Large site, central location.',aurora:2,season:'year'},
-  {id:'vogar',name:'Vogar Campsite',region:'Reykjanes Peninsula',lat:63.9973,lon:-22.3656,price:'~1,500 kr/p',km:45,sights:['Blue Lagoon nearby','Reykjanes lava fields','Keflavík airport 15min'],note:'Year-round. Convenient for airport.',aurora:3,season:'year'},
-  {id:'hveragerdi',name:'Reykjamörk, Hveragerði',region:'South · Capital area',lat:63.9930,lon:-21.1780,price:'~1,750 kr/p',km:45,sights:['Reykjadalur hot river hike','Geothermal park','Swimming pool nearby'],note:'Year-round. Near famous hot river valley.',aurora:3,season:'year'},
-  {id:'ulfljotsvatn',name:'Úlfljótsvatn',region:'South Iceland',lat:64.0517,lon:-21.0930,price:'~1,800 kr/p',km:60,sights:['Lake swimming','Golden Circle 30min','Þingvellir 20min'],note:'Year-round. Beautiful lakeside setting.',aurora:3,season:'year'},
-  {id:'selfoss',name:'Selfoss Campsite',region:'South Iceland',lat:63.9310,lon:-21.0070,price:'~1,800 kr/p',km:60,sights:['Þórsmörk access','Golden Circle nearby','Seljalandsfoss 40min'],note:'Year-round. Well-equipped town campsite.',aurora:3,season:'year'},
-  // SOUTH COAST
-  {id:'skogakot',name:'Skógakot / Skógar',region:'South Coast',lat:63.5316,lon:-19.5142,price:'~2,000 kr/p',km:155,sights:['Skógafoss waterfall steps away','Fimmvörðuháls trailhead','Folk Museum'],note:'Year-round. Right next to Skógafoss.',aurora:4,season:'year'},
-  {id:'kleifar',name:'Kleifar, Kirkjubæjarklaustur',region:'South Coast',lat:63.7834,lon:-18.0622,price:'~1,000 kr/p',km:270,sights:['Stjórnarfoss waterfall at camp','Fjaðrárgljúfur canyon 10min','Lakagigar lava craters nearby'],note:'Year-round. 2.5km from Kirkjubæjarklaustur. Stjórnarfoss waterfall on site.',aurora:4,season:'year'},
-  {id:'skaftafell',name:'Skaftafell Campground',region:'Vatnajökull NP · Southeast',lat:64.0167,lon:-16.9667,price:'~1,750 kr/p',km:330,sights:['Svartifoss black waterfall','Skaftafellsjökull glacier','Hvannadalshnjúkur trailhead'],note:'Year-round. Inside Vatnajökull National Park. Iceland\'s most scenic campsite.',aurora:5,season:'year'},
-  {id:'svinafell',name:'Svínafell Campsite',region:'Southeast Iceland',lat:64.0100,lon:-16.8700,price:'~1,800 kr/p',km:340,sights:['Jökulsárlón 25min','Diamond Beach','Glacier hiking base'],note:'Year-round (sleeping bag rooms). Near Vatnajökull.',aurora:5,season:'year'},
-  // EAST
-  {id:'hofn',name:'Höfn Campsite',region:'East Iceland',lat:64.2537,lon:-15.2082,price:'~1,800 kr/p',km:460,sights:['Glacier views','Lobster capital of Iceland','Jökulsárlón 80km'],note:'Year-round. Gateway to Vatnajökull.',aurora:5,season:'year'},
-  {id:'fossardalur',name:'Fossárdalur',region:'East Fjords',lat:64.7558,lon:-14.4986,price:'~1,500 kr/p',km:550,sights:['East Fjords coastal road','Djúpivogur art eggs','Berufjörður views'],note:'Year-round. Rated 4.8★ — one of Iceland\'s best.',aurora:5,season:'year'},
-  {id:'egilsstadir',name:'Camp Egilsstaðir',region:'East Iceland',lat:65.2667,lon:-14.3958,price:'~2,000 kr/p',km:620,sights:['Hallormsstaður forest walks','Lagarfljót lake','Seyðisfjörður fjord 25min'],note:'Year-round. Capital of East Iceland. Pre-booking required.',aurora:5,season:'year'},
-  {id:'vopnafjordur',name:'Vopnafjörður Campsite',region:'Northeast Iceland',lat:65.7519,lon:-14.8508,price:'~1,500 kr/p',km:700,sights:['Remote East Fjords','Bustarfell heritage museum','Salmon fishing'],note:'Year-round. Off the beaten track.',aurora:5,season:'year'},
-  // NORTH
-  {id:'modrudalur',name:'Möðrudalur á Fjöllum',region:'Northeast Highlands',lat:65.3575,lon:-16.1921,price:'~2,000 kr/p',km:680,sights:['Highest farm in Iceland','Dettifoss 60km','Remote highland scenery'],note:'Year-round. Most remote campsite on this list.',aurora:5,season:'year'},
-  {id:'hlid_myvatn',name:'Hlíð, Mývatn',region:'North Iceland',lat:65.5880,lon:-17.0050,price:'~1,900 kr/p',km:740,sights:['Lake Mývatn birdwatching','Námaskarð geothermal field','Dimmuborgir lava formations'],note:'Year-round. Best base for Mývatn area.',aurora:5,season:'year'},
-  {id:'cja',name:'CJA Camping, Laugar',region:'North Iceland',lat:65.7017,lon:-17.3498,price:'~1,600 kr/p',km:780,sights:['Goðafoss 30min','Laugar geothermal pool','Private hedged pitches'],note:'Year-round. Legendary hosts. Private pitches.',aurora:5,season:'year'},
-  {id:'hamrar',name:'Hamrar, Akureyri',region:'North Iceland · Akureyri',lat:65.6700,lon:-18.0750,price:'~1,900 kr/p',km:830,sights:['Kjarnaskógur forest walks','Akureyri town 3km','Hlíðafjall ski slope nearby'],note:'Year-round. Best facilities in North Iceland.',aurora:4,season:'year'},
-  // NORTHWEST & WEST
-  {id:'blonduos',name:'Gladheimar, Blönduós',region:'Northwest Iceland',lat:65.6624,lon:-20.2891,price:'~1,500 kr/p',km:240,sights:['River Blanda salmon fishing','Halfway Reykjavík-Akureyri','Textile Museum'],note:'Year-round. Cottages + camping. Hot tubs. Exactly halfway between Reykjavík and Akureyri.',aurora:4,season:'year'},
-  {id:'budardalur',name:'Búðardalur Campsite',region:'West Iceland · Dalir',lat:65.1000,lon:-21.7833,price:'~1,500 kr/p',km:160,sights:['Leif Eiríksson Centre (Viking history)','Dalahestar horse rental','Westfjords access via Rt 60'],note:'Year-round. Well-sheltered grove. Shop, restaurant 250m.',aurora:3,season:'year'},
-  {id:'husafell',name:'Húsafell Campsite',region:'West Iceland',lat:64.7028,lon:-20.9028,price:'~1,800 kr/p',km:115,sights:['Hraunfossar & Barnafoss waterfalls nearby','Krauma geothermal spa','Langjökull glacier access'],note:'Year-round. Beautiful lava landscape. Full facilities.',aurora:4,season:'year'},
-  {id:'snorrastadir',name:'Snorrastaðir Campsite',region:'West Iceland · Borgarfjörður',lat:64.7736,lon:-22.3012,price:'~1,800 kr/p',km:75,sights:['Eldborg volcanic crater hike at camp','Borgarnes 25min','Snæfellsnes 45min'],note:'Year-round. Great aurora spot. Baby goats in spring.',aurora:4,season:'year'},
-  {id:'stykkisholmur',name:'Stykkishólmur Campsite',region:'Snæfellsnes',lat:65.0712,lon:-22.7312,price:'~1,800 kr/p',km:170,sights:['Snæfellsnes Peninsula','Ferry to Westfjords','Library of Water art installation'],note:'Year-round. Gateway to Snæfellsnes.',aurora:3,season:'year'},
-  {id:'garður',name:'Garður Campsite',region:'Reykjanes Peninsula',lat:64.0830,lon:-22.6918,price:'~1,500 kr/p',km:50,sights:['Two lighthouses','Birdwatching','Keflavík airport 10min'],note:'Year-round. Great bird spotting.',aurora:3,season:'year'},
+/* ================================================================
+   DATA
+================================================================ */
+const CAMPSITES = [
+  { name:'Reykjavík – Laugardalur', lat:64.141, lng:-21.877, type:'Premium', note:'Hot tubs on site', gmaps:'https://maps.google.com/?q=64.141,-21.877' },
+  { name:'Selfoss – Árból', lat:63.932, lng:-21.000, type:'Basic', note:'By Ölfusá river', gmaps:'https://maps.google.com/?q=63.932,-21.000' },
+  { name:'Vík – Norður-Vík', lat:63.419, lng:-19.010, type:'Premium', note:'Black beach views', gmaps:'https://maps.google.com/?q=63.419,-19.010' },
+  { name:'Skaftafell – Vatnajökull NP', lat:63.996, lng:-16.969, type:'NP', note:'Glacier hikes', gmaps:'https://maps.google.com/?q=63.996,-16.969' },
+  { name:'Höfn – Hamrar', lat:64.252, lng:-15.208, type:'Basic', note:'Glacier lagoon nearby', gmaps:'https://maps.google.com/?q=64.252,-15.208' },
+  { name:'Djúpivogur', lat:64.656, lng:-14.291, type:'Basic', note:'Quiet east fjords', gmaps:'https://maps.google.com/?q=64.656,-14.291' },
+  { name:'Egilsstaðir – Lyngholt', lat:65.268, lng:-14.394, type:'Premium', note:'Hot showers', gmaps:'https://maps.google.com/?q=65.268,-14.394' },
+  { name:'Seyðisfjörður', lat:65.259, lng:-14.008, type:'Basic', note:'Fjord side', gmaps:'https://maps.google.com/?q=65.259,-14.008' },
+  { name:'Þórshöfn', lat:66.199, lng:-15.333, type:'Basic', note:'Remote north-east', gmaps:'https://maps.google.com/?q=66.199,-15.333' },
+  { name:'Húsavík', lat:66.044, lng:-17.338, type:'Premium', note:'Whale watching', gmaps:'https://maps.google.com/?q=66.044,-17.338' },
+  { name:'Goðafoss – Fosshóll', lat:65.685, lng:-17.539, type:'Basic', note:'Walk to waterfall', gmaps:'https://maps.google.com/?q=65.685,-17.539' },
+  { name:'Akureyri – Hamrar', lat:65.676, lng:-18.085, type:'Premium', note:'City facilities', gmaps:'https://maps.google.com/?q=65.676,-18.085' },
+  { name:'Hvammstangi', lat:65.400, lng:-20.949, type:'Basic', note:'Seal centre nearby', gmaps:'https://maps.google.com/?q=65.400,-20.949' },
+  { name:'Borgarnes – Brautarholt', lat:64.540, lng:-21.910, type:'Basic', note:'Settlement centre', gmaps:'https://maps.google.com/?q=64.540,-21.910' },
+  { name:'Ísafjörður', lat:66.075, lng:-23.136, type:'Premium', note:'Westfjords base', gmaps:'https://maps.google.com/?q=66.075,-23.136' },
+  { name:'Snæfellsnes – Hellissandur', lat:64.922, lng:-23.905, type:'Basic', note:'Glacier peninsula', gmaps:'https://maps.google.com/?q=64.922,-23.905' },
+  { name:'Grundarfjörður', lat:64.918, lng:-23.245, type:'Basic', note:'Kirkjufell views', gmaps:'https://maps.google.com/?q=64.918,-23.245' },
+  { name:'Stykishólmur', lat:65.071, lng:-22.710, type:'Basic', note:'Ferry to Westfjords', gmaps:'https://maps.google.com/?q=65.071,-22.710' },
+  { name:'Flúðir', lat:64.133, lng:-20.318, type:'Basic', note:'Secret Lagoon area', gmaps:'https://maps.google.com/?q=64.133,-20.318' },
+  { name:'Þórsmörk – Húsadalur', lat:63.683, lng:-19.518, type:'NP', note:'Highland access', gmaps:'https://maps.google.com/?q=63.683,-19.518' },
+  { name:'Kirkjubæjarklaustur', lat:63.785, lng:-18.058, type:'Basic', note:'Laki eruption site', gmaps:'https://maps.google.com/?q=63.785,-18.058' },
+  { name:'Nesjavellir', lat:64.085, lng:-21.183, type:'Basic', note:'Geothermal area', gmaps:'https://maps.google.com/?q=64.085,-21.183' },
+  { name:'Hella', lat:63.834, lng:-20.397, type:'Basic', note:'South Iceland hub', gmaps:'https://maps.google.com/?q=63.834,-20.397' },
 ];
 
-const ATTRS=[
-  {id:'seljalandsfoss',name:'Seljalandsfoss',lat:63.6156,lon:-19.9886,icon:'💧',type:'waterfall',typeClass:'at-waterfall',typeLabel:'Waterfall',day:'Day 1 — en route',time:'45 min',must:true,desc:'Walk completely behind the waterfall curtain — surreal. Icy in late March, micro-spikes recommended. Free to visit.'},
-  {id:'skogafoss',name:'Skógafoss',lat:63.5322,lon:-19.5108,icon:'💧',type:'waterfall',typeClass:'at-waterfall',typeLabel:'Waterfall',day:'Day 1 — en route',time:'30 min',must:true,desc:'60m wide, 25m tall. Climb 370 stairs for rainbow views from the top. One of Iceland\'s most photogenic waterfalls.'},
-  {id:'reynisfjara',name:'Reynisfjara Black Beach',lat:63.4047,lon:-19.0445,icon:'🏖',type:'beach',typeClass:'at-beach',typeLabel:'Black beach',day:'Day 2 — en route',time:'45 min',must:true,desc:'Basalt column sea stacks, roaring surf, jet-black sand. WARNING: rogue waves are deadly — never turn your back on the ocean here.'},
-  {id:'jokulsarlon',name:'Jökulsárlón Glacier Lagoon',lat:64.0784,lon:-16.2306,icon:'🧊',type:'lagoon',typeClass:'at-lagoon',typeLabel:'Glacier lagoon',day:'Day 2 — en route',time:'1–2 hrs',must:true,desc:'Icebergs calving off Breiðamerkurjökull. Seals swim among the ice. Otherworldly. In March fewer crowds and Northern Lights reflect in the water at night.'},
-  {id:'diamond',name:'Diamond Beach',lat:64.0652,lon:-16.2276,icon:'💎',type:'beach',typeClass:'at-beach',typeLabel:'Ice beach',day:'Day 2 — en route',time:'20 min',must:true,desc:'Ice chunks on black sand look like scattered diamonds. 5 min walk from Jökulsárlón. Perfect in any light.'},
-  {id:'vestrahorn',name:'Vestrahorn / Stokksnes',lat:64.2449,lon:-14.9884,icon:'🏔',type:'hike',typeClass:'at-hike',typeLabel:'Mountain + beach',day:'Day 2–3 — en route',time:'1 hr',must:false,desc:'Dramatic jagged peak over black sand. Small entry fee at Viking café. One of Iceland\'s most photogenic spots. Open in March.'},
-  {id:'dettifoss',name:'Dettifoss',lat:65.8144,lon:-16.3847,icon:'💧',type:'waterfall',typeClass:'at-waterfall',typeLabel:'Waterfall',day:'Day 4 — detour',time:'1–1.5 hrs',must:true,desc:'Europe\'s most powerful waterfall — 193 m³/s of glacial melt thunder into a 100m gorge. Primordial and humbling. Road 862 east side usually open in late March.'},
-  {id:'namaskar',name:'Námaskarð Geothermal Field',lat:65.6379,lon:-16.8229,icon:'🌋',type:'geo',typeClass:'at-geo',typeLabel:'Geothermal',day:'Day 4 — optional detour',time:'45 min',must:false,desc:'Bubbling mud pools, sulphur vents, and rust-red lunar landscape near Lake Mývatn. Looks like Mars. Open all year, free access.'},
-  {id:'godafoss',name:'Goðafoss',lat:65.6832,lon:-17.5499,icon:'💧',type:'waterfall',typeClass:'at-waterfall',typeLabel:'Waterfall',day:'Day 5 — en route',time:'30 min',must:true,desc:'"Waterfall of the Gods" — horseshoe-shaped, 30m wide. In 1000 AD a chieftain threw Norse idols here when Iceland converted to Christianity.'},
-  {id:'glaumbaer',name:'Glaumbær Turf Farm',lat:65.6579,lon:-19.5196,icon:'🏡',type:'historic',typeClass:'at-historic',typeLabel:'Heritage site',day:'Day 5–6 — en route',time:'1 hr',must:false,desc:'Iceland\'s best-preserved 18th–19th century turf farm. Low ceilinged peat rooms, ancient tools. Open in late March — check hours ahead.'},
-  {id:'eldborg',name:'Eldborg Crater',lat:64.7683,lon:-22.3197,icon:'🌋',type:'hike',typeClass:'at-hike',typeLabel:'Volcanic crater',day:'Day 6 — at camp',time:'2–2.5 hrs return',must:true,desc:'Trail starts at Snorrastaðir campsite. 60m-deep volcanic crater, 5000 years old. Views across all of Snæfellsnes. Crampons may help in March.'},
-  {id:'snaefellsjokull',name:'Snæfellsjökull Glacier',lat:64.8081,lon:-23.7734,icon:'🏔',type:'glacier',typeClass:'at-glacier',typeLabel:'Glacier / volcano',day:'Day 7',time:'2–3 hrs',must:true,desc:'Jules Verne\'s "Journey to the Center of the Earth" gateway. Glacier caps a volcano at the peninsula tip. Guided glacier walk recommended in March.'},
-  {id:'arnarstapi',name:'Arnarstapi & Hellnar',lat:64.7684,lon:-23.6219,icon:'🌊',type:'hike',typeClass:'at-hike',typeLabel:'Sea cliffs walk',day:'Day 7',time:'1.5 hrs walk',must:true,desc:'3km coastal walk between two villages past basalt arches, sea caves, nesting fulmars. One of Iceland\'s finest short walks. Café at each end.'},
-  {id:'kirkjufell',name:'Kirkjufell',lat:64.9413,lon:-23.3079,icon:'🏔',type:'nature',typeClass:'at-nature',typeLabel:'Iconic mountain',day:'Day 7 — at camp',time:'1 hr',must:true,desc:'Most photographed mountain in Iceland — 463m arrow-shaped peak. The waterfall in front makes the classic shot. 5 min drive from your campsite. Evening light is incredible.'},
-  {id:'thingvellir',name:'Þingvellir National Park',lat:64.2558,lon:-21.1297,icon:'🌍',type:'historic',typeClass:'at-historic',typeLabel:'UNESCO / Tectonic',day:'Day 8 — en route',time:'1–2 hrs',must:true,desc:'Walk the rift between North American and Eurasian tectonic plates. Also the world\'s oldest parliament site (930 AD). UNESCO World Heritage.'},
-  {id:'geysir',name:'Geysir',lat:64.3103,lon:-20.3021,icon:'💨',type:'geo',typeClass:'at-geo',typeLabel:'Geyser field',day:'Day 8 — en route',time:'45 min',must:true,desc:'Strokkur erupts every 5–8 min shooting water 20–40m high. Free entry. Bubbling hot springs all around.'},
-  {id:'gullfoss',name:'Gullfoss',lat:64.3269,lon:-20.1209,icon:'💧',type:'waterfall',typeClass:'at-waterfall',typeLabel:'Waterfall',day:'Day 8 — en route',time:'45 min',must:true,desc:'Two-tier waterfall into a glacier-carved canyon. Lower walkway may be icy in March but viewpoints are open. Expect spray — bring waterproofs.'},
+const SIGHTS = [
+  { name:'Jökulsárlón', emoji:'🧊', lat:64.048, lng:-16.180, cat:'Glacier', desc:'Iceberg lagoon, most photographed in Iceland', gmaps:'https://maps.google.com/?q=64.048,-16.180' },
+  { name:'Seljalandsfoss', emoji:'💦', lat:63.616, lng:-19.989, cat:'Waterfall', desc:'Walk behind the 60m curtain waterfall', gmaps:'https://maps.google.com/?q=63.616,-19.989' },
+  { name:'Skógafoss', emoji:'🌊', lat:63.532, lng:-19.511, cat:'Waterfall', desc:'60m wide fall with rainbow spray', gmaps:'https://maps.google.com/?q=63.532,-19.511' },
+  { name:'Reynisfjara', emoji:'🖤', lat:63.405, lng:-19.044, cat:'Beach', desc:'Black sand, basalt columns, dangerous surf', gmaps:'https://maps.google.com/?q=63.405,-19.044' },
+  { name:'Geysir & Strokkur', emoji:'💨', lat:64.312, lng:-20.300, cat:'Geyser', desc:'Erupts every 6-10 minutes', gmaps:'https://maps.google.com/?q=64.312,-20.300' },
+  { name:'Gullfoss', emoji:'⚡', lat:64.327, lng:-20.120, cat:'Waterfall', desc:'Two-tiered glacial waterfall', gmaps:'https://maps.google.com/?q=64.327,-20.120' },
+  { name:'Þingvellir NP', emoji:'🏛️', lat:64.255, lng:-21.130, cat:'Heritage', desc:'UNESCO site, tectonic plates, parliament', gmaps:'https://maps.google.com/?q=64.255,-21.130' },
+  { name:'Mývatn', emoji:'🦆', lat:65.600, lng:-17.000, cat:'Nature', desc:'Volcanic craters, lava fields, hot springs', gmaps:'https://maps.google.com/?q=65.600,-17.000' },
+  { name:'Dettifoss', emoji:'💪', lat:65.815, lng:-16.385, cat:'Waterfall', desc:'Most powerful waterfall in Europe', gmaps:'https://maps.google.com/?q=65.815,-16.385' },
+  { name:'Goðafoss', emoji:'🌀', lat:65.682, lng:-17.549, cat:'Waterfall', desc:'Waterfall of the Gods', gmaps:'https://maps.google.com/?q=65.682,-17.549' },
+  { name:'Kirkjufell', emoji:'⛰️', lat:64.942, lng:-23.306, cat:'Mountain', desc:'Arrow-shaped peak, Game of Thrones filming', gmaps:'https://maps.google.com/?q=64.942,-23.306' },
+  { name:'Snæfellsjökull', emoji:'🌋', lat:64.808, lng:-23.776, cat:'Glacier', desc:'Glacier volcano, Jules Verne inspiration', gmaps:'https://maps.google.com/?q=64.808,-23.776' },
+  { name:'Diamond Beach', emoji:'💎', lat:64.042, lng:-16.178, cat:'Beach', desc:'Icebergs wash up on black sand', gmaps:'https://maps.google.com/?q=64.042,-16.178' },
+  { name:'Fjaðrárgljúfur Canyon', emoji:'🏞️', lat:63.756, lng:-18.173, cat:'Canyon', desc:'2km canyon, 100m deep', gmaps:'https://maps.google.com/?q=63.756,-18.173' },
+  { name:'Hverir (Námafjall)', emoji:'🟡', lat:65.641, lng:-16.821, cat:'Geothermal', desc:'Boiling mud, sulphur fields', gmaps:'https://maps.google.com/?q=65.641,-16.821' },
+  { name:'Svartifoss', emoji:'🏛️', lat:64.027, lng:-16.975, cat:'Waterfall', desc:'Basalt column waterfall, Skaftafell', gmaps:'https://maps.google.com/?q=64.027,-16.975' },
+  { name:'Secret Lagoon', emoji:'♨️', lat:64.130, lng:-20.302, cat:'Hot Spring', desc:'Natural hot spring, less crowded than Blue Lagoon', gmaps:'https://maps.google.com/?q=64.130,-20.302' },
 ];
 
-const SEGS={
-  s1:{name:'Keflavík → South Coast',note:'Ring Rd paved. Ice at night possible.',status:'open'},
-  s2:{name:'South Coast → East Fjords',note:'Long (430km). Possible snow near East Fjords.',status:'caution'},
-  s3:{name:'East Fjords coastal road north',note:'Twisting, can be icy in late March.',status:'caution'},
-  s4:{name:'Northeast → North (via Dettifoss)',note:'Rd 862 east usually open. Verify road.is.',status:'check'},
-  s5:{name:'North Iceland → Skagafjörður',note:'Ring Rd paved. Wind exposure.',status:'open'},
-  s6:{name:'Skagafjörður → Snæfellsnes',note:'Rt 1 + Rt 54. Both paved.',status:'open'},
-  s7:{name:'Snæfellsnes Peninsula (Rt 574)',note:'Ice/wind near glacier possible.',status:'caution'},
-  s8:{name:'Golden Circle → South',note:'Well-maintained tourist roads.',status:'open'},
-};
+const WEATHER_STATIONS = [
+  { id:'1', name:'Reykjavík',    lat:64.13, lng:-21.90 },
+  { id:'2', name:'Akureyri',     lat:65.68, lng:-18.11 },
+  { id:'3', name:'Egilsstaðir', lat:65.28, lng:-14.40 },
+  { id:'4', name:'Höfn',         lat:64.25, lng:-15.21 },
+  { id:'5', name:'Vík',          lat:63.42, lng:-19.01 },
+  { id:'6', name:'Ísafjörður',  lat:66.07, lng:-23.13 },
+  { id:'7', name:'Selfoss',      lat:63.93, lng:-21.00 },
+  { id:'8', name:'Húsavík',      lat:66.04, lng:-17.34 },
+  { id:'9', name:'Sauðárkrókur',lat:65.74, lng:-19.64 },
+  { id:'10',name:'Stykkishólmur',lat:65.07, lng:-22.71 },
+  { id:'11',name:'Neskaupstaður',lat:65.14, lng:-13.68 },
+  { id:'12',name:'Vestmannaeyjar',lat:63.44,lng:-20.27 },
+  { id:'13',name:'Kirkjubæjarklaustur',lat:63.79,lng:-18.06 },
+];
 
-const WXI={0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',48:'🌫',51:'🌦',53:'🌦',55:'🌧',61:'🌧',63:'🌧',65:'🌧',71:'🌨',73:'❄️',75:'❄️',77:'❄️',80:'🌦',81:'🌧',82:'⛈',85:'🌨',86:'❄️',95:'⛈',96:'⛈',99:'⛈'};
+/* ================================================================
+   STATE
+================================================================ */
+let map, activeSheet = null, deferredPrompt = null;
+let windLayerOn = true, roadLayerOn = true;
+let activeStation = '1';
+let weatherData = {};
+let roadLayerGroup, windMarkers = [];
 
-const ATTR_COLORS={waterfall:'#3b82f6',glacier:'#93c5fd',beach:'#fbbf24',geo:'#f97316',lagoon:'#2dd4bf',historic:'#a78bfa',hike:'#4ade80',nature:'#86efac'};
-
-let wx={},mapInst,campGroup,attrGroup,windGroup,layerState={camp:true,attr:true,wind:false};
-let liveRoads=null,liveWind=null;
-
-function today(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
-function isToday(s){return s.dstr===today()}
-function isPast(s){return s.dstr<today()}
-function stars(n){return'★'.repeat(n)+'☆'.repeat(5-n)}
-function wdir(d){return['N','NE','E','SE','S','SW','W','NW'][Math.round(d/45)%8]}
-function sclass(s){return{open:'so',caution:'sc',check:'sk'}[s]}
-function slabel(s){return{open:'✓ OPEN',caution:'⚠ CAUTION',check:'🔍 CHECK'}[s]}
-function prclass(s){return{open:'ro',caution:'rc',check:'rk'}[s]}
-
-async function fetchWx(s){
-  const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${s.lat}&longitude=${s.lon}&daily=weathercode,temperature_2m_max,temperature_2m_min,windspeed_10m_max,winddirection_10m_dominant&wind_speed_unit=ms&timezone=Atlantic/Reykjavik&forecast_days=16`);
-  return(await r.json()).daily;
-}
-async function loadWx(cb){
-  const u=SITES.filter((s,i,a)=>a.findIndex(x=>x.id===s.id)===i);
-  for(let i=0;i<u.length;i++){
-    try{const d=await fetchWx(u[i]);wx[u[i].id]=d;if(u[i].id==='hellisholar')wx['hellisholar2']=d;}catch(e){}
-    cb(Math.round((i+1)/u.length*80));
-  }
-}
-function wxForDate(id,dstr){
-  const d=wx[id];if(!d)return null;
-  const i=d.time.indexOf(dstr);if(i<0)return null;
-  return{code:d.weathercode[i],hi:Math.round(d.temperature_2m_max[i]),lo:Math.round(d.temperature_2m_min[i]),wind:Math.round(d.windspeed_10m_max[i]),dir:wdir(d.winddirection_10m_dominant?.[i]??0)};
-}
-
-function initMap(){
-  mapInst=L.map('map',{zoomControl:false,attributionControl:false}).setView([65,-18.5],6);
-
-  // Base dark map
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(mapInst);
-
-  // Road overlay - ESRI Reference/Boundaries overlay (transparent background, roads+labels only)
-  // Free, no auth, designed to be overlaid on any basemap
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',{
-    maxZoom:19,
-    opacity:0.4,
-    attribution:'Roads © ESRI'
-  }).addTo(mapInst);
-
-  L.control.zoom({position:'topright'}).addTo(mapInst);
-  // Removed: trip route polyline (personal trip specific)
-
-  campGroup=L.layerGroup().addTo(mapInst);
-  SITES.forEach(site=>{
-    const m=L.marker([site.lat,site.lon],{icon:L.divIcon({html:`<div class="cm">⛺</div>`,iconSize:[30,30],iconAnchor:[15,15],className:''})}).addTo(campGroup);
-    m.bindPopup(`<div class="pn">${site.name}</div><div class="pm">${site.region}</div><div style="font-size:12px;color:var(--muted);margin:6px 0;line-height:1.5">${site.note}</div><div class="pp">${site.price} per person</div><a href="https://www.google.com/maps/search/?api=1&query=${site.lat},${site.lon}" target="_blank" rel="noopener" style="font-size:11px;color:var(--accent);font-family:var(--mono)">📍 Open in Maps</a>`,{maxWidth:240});
-  });
-
-  attrGroup=L.layerGroup().addTo(mapInst);
-  ATTRS.forEach(a=>{
-    const bg=ATTR_COLORS[a.type]||'#f97316';
-    const m=L.marker([a.lat,a.lon],{icon:L.divIcon({html:`<div class="am" style="background:${bg}28;border:2px solid ${bg}77">${a.icon}</div>`,iconSize:[28,28],iconAnchor:[14,14],className:''})}).addTo(attrGroup);
-    // Fix: bind popup once upfront
-    m.bindPopup(`<div class="pn">${a.icon} ${a.name}</div><div class="attr-typebadge ${a.typeClass}">${a.typeLabel}</div><div style="font-size:12px;color:var(--muted);line-height:1.55">${a.desc}</div><div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:7px">📅 ${a.day}&nbsp;&nbsp;⏱ ${a.time}${a.must?'&nbsp;&nbsp;⭐ Must-see':''}</div>`,{maxWidth:275});
-  });
-}
-
-function toggleLayer(w){
-  layerState[w]=!layerState[w];
-  document.getElementById('tog-'+w).classList.toggle('on',layerState[w]);
-  if(w==='camp'){layerState.camp?campGroup.addTo(mapInst):mapInst.removeLayer(campGroup);}
-  else if(w==='attr'){layerState.attr?attrGroup.addTo(mapInst):mapInst.removeLayer(attrGroup);}
-  else if(w==='wind'){
-    if(layerState.wind){if(windGroup)windGroup.addTo(mapInst);}
-    else{if(windGroup)mapInst.removeLayer(windGroup);}
-  }
-}
-
-function buildRoute(){
-  const c=document.getElementById('ilist');c.innerHTML='';
-  const regions=['Capital Region','Reykjanes Peninsula','South · Capital area','South Iceland','South Coast','Vatnajökull NP · Southeast','Southeast Iceland','East Iceland','East Fjords','Northeast Iceland','Northeast Highlands','North Iceland','North Iceland · Akureyri','Snæfellsnes'];
-  const grouped={};
-  SITES.forEach(s=>{
-    const r=s.region;
-    if(!grouped[r])grouped[r]=[];
-    grouped[r].push(s);
-  });
-  Object.entries(grouped).forEach(([region,sites])=>{
-    const sh=document.createElement('div');sh.className='sh';sh.style.paddingTop='14px';sh.textContent=region.toUpperCase();c.appendChild(sh);
-    sites.forEach((site,idx)=>{
-      const uid=site.id+'_card';
-      const d=document.createElement('div');d.className='dc';
-      d.innerHTML=`<div class="dh">
-        <div class="dn" style="font-size:16px;background:var(--bg3)">⛺</div>
-        <div class="di">
-          <div class="dc-name">${site.name}</div>
-          <div class="dr">${site.price} per person</div>
-        </div>
-        <div class="dw" style="font-size:11px;font-family:var(--mono);color:var(--green);text-align:right">YEAR<br>ROUND</div>
-      </div>
-      <div class="db" id="${uid}">
-        <hr class="divr">
-        <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:8px">📍 <a href="https://www.google.com/maps/search/?api=1&query=${site.lat},${site.lon}" target="_blank" rel="noopener" style="color:var(--accent)">Open in Google Maps</a></div>
-        <div class="aurora"><span class="al">🌌 Aurora potential</span><span class="as">${stars(site.aurora)}</span></div>
-        <div class="sl">${site.sights.map(s=>`<div class="si">${s}</div>`).join('')}</div>
-        <div class="snn">${site.note}</div>
-      </div>`;
-      d.querySelector('.dh').addEventListener('click',()=>document.getElementById(uid).classList.toggle('open'));
-      c.appendChild(d);
-    });
-  });
-}
-
-function buildAttractions(){
-  const c=document.getElementById('alist');c.innerHTML='';
-  const regions=[
-    {label:'South Coast',ids:['seljalandsfoss','skogafoss','reynisfjara']},
-    {label:'Southeast',ids:['jokulsarlon','diamond','vestrahorn']},
-    {label:'Northeast',ids:['dettifoss','namaskar']},
-    {label:'North Iceland',ids:['godafoss','glaumbaer']},
-    {label:'West Iceland',ids:['eldborg']},
-    {label:'Snæfellsnes Peninsula',ids:['snaefellsjokull','arnarstapi','kirkjufell']},
-    {label:'Golden Circle',ids:['thingvellir','geysir','gullfoss']},
-  ];
-  regions.forEach(g=>{
-    const sh=document.createElement('div');sh.className='sh';sh.style.paddingTop='14px';sh.textContent=g.label.toUpperCase();c.appendChild(sh);
-    g.ids.forEach(id=>{
-      const a=ATTRS.find(x=>x.id===id);if(!a)return;
-      const card=document.createElement('div');card.className='attr-card';
-      card.innerHTML=`
-        <div class="attr-card-head">
-          <div class="attr-icon">${a.icon}</div>
-          <div style="flex:1">
-            <div class="attr-name">${a.name}${a.must?' ⭐':''}</div>
-            <div class="attr-sub">${a.typeLabel} · ⏱ ${a.time}</div>
-          </div>
-          <a href="https://www.google.com/maps/search/?api=1&query=${a.lat},${a.lon}" target="_blank" rel="noopener" style="flex-shrink:0;font-size:18px;text-decoration:none;opacity:.7" title="Open in Google Maps">📍</a>
-        </div>
-        <div class="attr-desc">${a.desc}</div>
-        <div class="attr-tags">${a.must?'<span class="tag tag-must">⭐ Must-see</span>':''}</div>`;
-      c.appendChild(card);
-    });
-  });
-}
-
-function buildWeather_unused(){}
-
-function buildRoads_unused(){}
-
-document.querySelectorAll('.tab').forEach(t=>{
-  t.addEventListener('click',()=>{
-    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
-    t.classList.add('active');
-    document.getElementById(t.dataset.p).classList.add('active');
-    if(t.dataset.p==='mp')setTimeout(()=>mapInst?.invalidateSize(),50);
-  });
+/* ================================================================
+   INIT
+================================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  initMap();
+  renderCampsites();
+  renderSights();
+  renderStationChips();
+  fetchWeather();
+  fetchRoads();
+  setInterval(() => { fetchWeather(); fetchRoads(); }, 5 * 60 * 1000);
+  setupPWA();
+  setupOfflineDetection();
+  updateTime();
+  setInterval(updateTime, 60000);
 });
 
-// ── Live API fetchers ──────────────────────────────────────────────
-
-async function fetchLiveRoads(){
-  try{
-    const r=await fetch('/api/roads',{signal:AbortSignal.timeout(10000)});
-    if(!r.ok)throw new Error('roads api error');
-    liveRoads=await r.json();
-  }catch(e){
-    liveRoads={ok:false,fallback:true,routes:[],activeClosures:[],fRoads:{open:false,label:'Check road.is',severity:'check'}};
-  }
+/* ================================================================
+   NAVIGATION
+================================================================ */
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'map') setTimeout(() => map && map.invalidateSize(), 100);
 }
 
-async function fetchLiveWind(){
-  try{
-    const r=await fetch('/api/weather',{signal:AbortSignal.timeout(10000)});
-    if(!r.ok)throw new Error('weather api error');
-    liveWind=await r.json();
-  }catch(e){
-    liveWind={ok:false,fallback:true,stations:[],alert:{level:'unknown',campervanWarning:false,warningAreas:[],message:'Check vedur.is for conditions.'}};
-  }
-}
-
-// ── Wind map layer ─────────────────────────────────────────────────
-
-function buildWindLayer(){
-  if(!mapInst||!liveWind||!liveWind.stations)return;
-  if(windGroup)mapInst.removeLayer(windGroup);
-  windGroup=L.layerGroup();
-
-  const SEV_COLORS={ok:'#22c55e',caution:'#f59e0b',warning:'#f97316',danger:'#ef4444',unknown:'#557a99'};
-
-  liveWind.stations.forEach(st=>{
-    if(!st.lat||!st.lon)return;
-    const sev=st.wind.severity||'unknown';
-    const col=SEV_COLORS[sev]||'#557a99';
-    const ms=st.wind.speedMs!==null?st.wind.speedMs.toFixed(1):'?';
-    const dir=st.wind.directionLabel||'–';
-
-    // Arrow icon showing wind direction
-    const arrowDeg=(st.wind.directionDeg||0)+180; // arrow points where wind goes TO
-    const icon=L.divIcon({
-      html:`<div style="width:36px;height:36px;border-radius:50%;background:${col}22;border:2px solid ${col}99;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-family:var(--mono)">
-        <div style="font-size:9px;font-weight:700;color:${col};line-height:1">${ms}</div>
-        <div style="font-size:7px;color:${col};opacity:.8">m/s</div>
-        <div style="font-size:8px;color:${col};opacity:.7">${dir}</div>
-      </div>`,
-      iconSize:[36,36],iconAnchor:[18,18],className:''
-    });
-
-    const m=L.marker([st.lat,st.lon],{icon}).addTo(windGroup);
-    const warn=st.wind.campervanWarning?'<div style="font-size:10px;background:#1a100a;color:var(--amber);border:1px solid #3a2010;border-radius:6px;padding:2px 8px;margin-top:6px;font-family:var(--mono)">⚠ Campervan caution</div>':'';
-    const popupHtml=`
-      <div class="pn">${st.name}</div>
-      <div class="pm">${st.region}</div>
-      <div style="font-size:13px;margin:6px 0;font-family:var(--mono)">
-        💨 ${ms} m/s ${dir}${st.wind.gustMs?` · gust ${st.wind.gustMs.toFixed(1)}`:''}<br>
-        <span style="color:${col};font-size:11px">${st.wind.label||''}</span>
-      </div>
-      ${st.temperature!==null?`<div style="font-size:12px;color:var(--muted)">🌡 ${st.temperature}°C</div>`:''}
-      ${warn}
-      <div style="font-size:9px;color:var(--muted);font-family:var(--mono);margin-top:6px">vedur.is · ${st.observedAt||'recent'}</div>
-    `;
-    m.bindPopup(popupHtml,{maxWidth:230});
+/* ================================================================
+   MAP
+================================================================ */
+function initMap() {
+  map = L.map('map', {
+    center: [65.0, -19.0],
+    zoom: 6,
+    zoomControl: false,
+    attributionControl: false,
   });
 
-  if(layerState.wind)windGroup.addTo(mapInst);
+  // Dark basemap
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19
+  }).addTo(map);
+
+  // Road overlay
+  roadLayerGroup = L.layerGroup().addTo(map);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 19, opacity: 0.55
+  }).addTo(roadLayerGroup);
+
+  // Attribution (small)
+  L.control.attribution({ position:'bottomleft', prefix:'' })
+    .addAttribution('© CartoDB | ESRI').addTo(map);
+
+  // Zoom control top-right
+  L.control.zoom({ position: 'topright' }).addTo(map);
+
+  // Plot campsites
+  CAMPSITES.forEach(c => {
+    const marker = L.circleMarker([c.lat, c.lng], {
+      radius: 7, fillColor: '#3fb950', color: '#0d1117',
+      weight: 2, fillOpacity: 1
+    }).addTo(map);
+    marker.on('click', () => openSheet(c.name, c.type + ' campsite · ' + c.note, [
+      { label:'Navigate', url: c.gmaps, primary: true },
+      { label:'Route', url: `https://maps.google.com/?q=${c.lat},${c.lng}`, primary: false },
+    ]));
+  });
+
+  // Plot sights
+  SIGHTS.forEach(s => {
+    const marker = L.circleMarker([s.lat, s.lng], {
+      radius: 7, fillColor: '#58a6ff', color: '#0d1117',
+      weight: 2, fillOpacity: 1
+    }).addTo(map);
+    marker.on('click', () => openSheet(s.emoji + ' ' + s.name, s.cat + ' · ' + s.desc, [
+      { label:'Navigate', url: s.gmaps, primary: true },
+    ]));
+  });
+
+  // Close sheet on map click
+  map.on('click', closeSheet);
 }
 
-// ── Updated buildRoads with live data ──────────────────────────────
+function locateMe() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(pos => {
+    map.setView([pos.coords.latitude, pos.coords.longitude], 10);
+    L.circleMarker([pos.coords.latitude, pos.coords.longitude], {
+      radius: 9, fillColor: '#58a6ff', color: '#fff', weight: 2, fillOpacity: 1
+    }).addTo(map).bindPopup('You are here').openPopup();
+  });
+}
 
-function buildRoads(){
-  const c=document.getElementById('rcontent');
-  c.innerHTML='';
+function fitRingRoad() {
+  map.setView([65.0, -19.0], 6);
+}
 
-  const data=liveRoads;
-  const isLive=data&&data.ok&&!data.fallback;
+function toggleWindLayer() {
+  windLayerOn = !windLayerOn;
+  document.getElementById('btn-wind-layer').classList.toggle('on', windLayerOn);
+  windMarkers.forEach(m => windLayerOn ? m.addTo(map) : map.removeLayer(m));
+}
 
-  // Live badge
-  const badge=document.createElement('div');
-  if(isLive){
-    const t=data.fetchedAt?new Date(data.fetchedAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'';
-    badge.innerHTML=`<div class="roads-live-badge"><div class="roads-live-dot"></div>LIVE · safetravel.is · updated ${t}</div>`;
-  }else{
-    badge.innerHTML=`<div class="data-fallback">⚠ Live road data unavailable — <a href="https://safetravel.is" target="_blank" rel="noopener" style="color:var(--accent)">check safetravel.is directly</a></div>`;
-  }
-  c.appendChild(badge);
+function toggleRoadLayer() {
+  roadLayerOn = !roadLayerOn;
+  document.getElementById('btn-road-layer').classList.toggle('on', roadLayerOn);
+  roadLayerOn ? roadLayerGroup.addTo(map) : map.removeLayer(roadLayerGroup);
+}
 
-  // Active alerts from safetravel.is
-  if(data?.alerts?.length>0){
-    const sh=document.createElement('div');sh.className='sh';sh.style.paddingTop='10px';sh.textContent='ACTIVE ALERTS';c.appendChild(sh);
-    data.alerts.forEach(alert=>{
-      const el=document.createElement('div');
-      // Determine severity from title/summary text
-      const txt=(alert.title+' '+alert.summary).toLowerCase();
-      const isClosed=txt.includes('clos');
-      const isDanger=txt.includes('blizzard')||txt.includes('avalanche')||txt.includes('danger');
-      const isWarn=txt.includes('strong wind')||txt.includes('warning')||txt.includes('difficult');
-      const alertClass=isClosed||isDanger?'yellow':isWarn?'yellow':'green';
-      const alertIcon=isClosed?'⛔':isDanger?'🚨':isWarn?'⚠️':'ℹ️';
-      el.innerHTML=`<div class="ralert ${alertClass}" style="margin-bottom:8px">
-        <div class="rai">${alertIcon}</div>
-        <div>
-          <div class="rat">${alert.title}</div>
-          <div class="rab">${alert.summary}</div>
-          ${alert.url?`<a href="${alert.url}" target="_blank" rel="noopener" style="font-size:10px;color:var(--accent);font-family:var(--mono);margin-top:4px;display:inline-block">Read more →</a>`:''}
+function openSheet(title, sub, actions) {
+  document.getElementById('sheet-title').textContent = title;
+  document.getElementById('sheet-sub').textContent = sub;
+  const acts = document.getElementById('sheet-actions');
+  acts.innerHTML = actions.map(a =>
+    `<a href="${a.url}" target="_blank" class="sheet-btn ${a.primary ? 'sheet-btn-primary' : 'sheet-btn-secondary'}">${a.label}</a>`
+  ).join('');
+  document.getElementById('map-sheet').classList.add('open');
+}
+
+function closeSheet() {
+  document.getElementById('map-sheet').classList.remove('open');
+}
+
+/* ================================================================
+   CAMPSITES LIST
+================================================================ */
+function renderCampsites() {
+  const badgeClass = { Premium:'badge-blue', Basic:'badge-green', NP:'badge-yellow' };
+  document.getElementById('camp-list').innerHTML = CAMPSITES.map((c, i) => `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">⛺</div>
+        <div class="card-body">
+          <div class="card-title">${c.name}</div>
+          <div class="card-sub">${c.note}</div>
         </div>
-      </div>`;
-      c.appendChild(el);
-    });
-  }
-
-  // F-roads status
-  const fr=data?.fRoads||{severity:'check',label:'Check road.is'};
-  const frEl=document.createElement('div');
-  frEl.innerHTML=`<div class="sh" style="padding-top:6px">F-ROADS STATUS</div>
-  <div class="ralert ${fr.severity==='open'?'green':'yellow'}">
-    <div class="rai">${fr.severity==='open'?'✅':'⛔'}</div>
-    <div><div class="rat">Highland F-Roads</div><div class="rab">${fr.label} — Never attempt F-roads without a proper 4WD and checking road.is.</div></div>
-  </div>`;
-  c.appendChild(frEl);
-
-  // Links
-  const lh=document.createElement('div');lh.innerHTML='<div class="sh" style="margin-top:4px">CHECK EVERY MORNING</div>';c.appendChild(lh);
-  const ld=document.createElement('div');ld.className='elinks';
-  [{i:'🛟',t:'safetravel.is',s:'Active alerts & travel warnings',u:'https://safetravel.is/travel-conditions/'},
-   {i:'🗺',t:'road.is',s:'Official road closures (Vegagerðin)',u:'https://www.road.is'},
-   {i:'⛅',t:'vedur.is',s:'Icelandic Met Office — wind & forecasts',u:'https://en.vedur.is'},
-   {i:'📱',t:'112 Iceland App',s:'Emergency registration — download now',u:'https://www.safetravel.is/112-iceland-app'}
-  ].forEach(l=>{
-    const a=document.createElement('a');a.className='elink';a.href=l.u;a.target='_blank';a.rel='noopener';
-    a.innerHTML=`<div class="eli">${l.i}</div><div class="elt"><div class="elt1">${l.t}</div><div class="elt2">${l.s}</div></div><div class="ela">›</div>`;
-    ld.appendChild(a);
-  });
-  c.appendChild(ld);
-}
-
-// ── Updated buildWeather with live wind banner ─────────────────────
-
-function buildWeatherTab(){
-  const c=document.getElementById('wlist');c.innerHTML='';
-
-  // Wind alert banner at top
-  if(liveWind){
-    const al=liveWind.alert||{};
-    const sev=al.level||'unknown';
-    const sevIcon={ok:'🌬',caution:'💨',warning:'⚠️',danger:'🚨',unknown:'❓'}[sev]||'❓';
-    const banner=document.createElement('div');
-    const t=liveWind.fetchedAt?new Date(liveWind.fetchedAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'';
-    banner.innerHTML=`<div class="wind-banner ${sev}">
-      <div class="wb-icon">${sevIcon}</div>
-      <div class="wb-text">
-        <div class="wb-title">${al.campervanWarning?'Campervan wind warning active':'Wind conditions '+sev}</div>
-        <div class="wb-sub">${al.message||''}</div>
+        <div class="card-badge ${badgeClass[c.type] || 'badge-green'}">${c.type}</div>
       </div>
-      ${t?`<div class="wb-time">vedur.is<br>${t}</div>`:''}
-    </div>`;
-    c.appendChild(banner);
+      <div class="card-actions">
+        <a href="${c.gmaps}" target="_blank" class="card-action-btn">Navigate</a>
+        <button class="card-action-btn" onclick="showOnMap(${c.lat},${c.lng},'${c.name.replace(/'/g,"\\'")}')">Show on Map</button>
+      </div>
+    </div>
+  `).join('');
+}
 
-    // Wind stations
-    if(liveWind.stations&&liveWind.stations.length>0){
-      const sh=document.createElement('div');sh.className='sh';sh.style.paddingTop='12px';sh.textContent='WIND STATIONS';c.appendChild(sh);
-      const SEV_CLASS={ok:'ws-ok',caution:'ws-caution',warning:'ws-warning',danger:'ws-danger',unknown:'ws-unknown'};
-      liveWind.stations.forEach(st=>{
-        if(st.wind.speedMs===null&&st.temperature===null)return;
-        const el=document.createElement('div');el.className='wstation';
-        const sc2=SEV_CLASS[st.wind.severity]||'ws-unknown';
-        const ms=st.wind.speedMs!==null?st.wind.speedMs.toFixed(1):'?';
-        el.innerHTML=`
-          <div style="flex:1">
-            <div class="ws-region">${st.region}</div>
-            <div class="ws-name">${st.name}</div>
-            ${st.temperature!==null?`<div style="font-size:11px;color:var(--muted);font-family:var(--mono)">🌡 ${st.temperature}°C</div>`:''}
-            ${st.wind.campervanWarning?'<div class="ws-camper">⚠ Campervan caution</div>':''}
-          </div>
-          <div class="ws-wind">
-            <div class="ws-speed ${sc2}">${ms}<span style="font-size:10px"> m/s</span></div>
-            <div class="ws-dir">${st.wind.directionLabel||'–'}</div>
-            <div class="ws-label ${sc2}">${st.wind.label||''}</div>
-          </div>`;
-        c.appendChild(el);
-      });
-    }
+/* ================================================================
+   SIGHTS LIST
+================================================================ */
+function renderSights() {
+  const catColor = { Waterfall:'badge-blue', Glacier:'badge-blue', Beach:'badge-green',
+    Geyser:'badge-yellow', Heritage:'badge-yellow', Nature:'badge-green',
+    Mountain:'badge-green', Canyon:'badge-green', Geothermal:'badge-yellow', 'Hot Spring':'badge-yellow' };
+  document.getElementById('sights-list').innerHTML = SIGHTS.map(s => `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">${s.emoji}</div>
+        <div class="card-body">
+          <div class="card-title">${s.name}</div>
+          <div class="card-sub">${s.desc}</div>
+        </div>
+        <div class="card-badge ${catColor[s.cat] || 'badge-blue'}">${s.cat}</div>
+      </div>
+      <div class="card-actions">
+        <a href="${s.gmaps}" target="_blank" class="card-action-btn">Navigate</a>
+        <button class="card-action-btn" onclick="showOnMap(${s.lat},${s.lng},'${s.name.replace(/'/g,"\\'")}')">Show on Map</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function showOnMap(lat, lng, name) {
+  switchTab('map', document.querySelector('[data-tab="map"]'));
+  setTimeout(() => {
+    map.setView([lat, lng], 11);
+    openSheet(name, `${lat.toFixed(3)}, ${lng.toFixed(3)}`, [
+      { label: 'Navigate', url: `https://maps.google.com/?q=${lat},${lng}`, primary: true }
+    ]);
+  }, 200);
+}
+
+/* ================================================================
+   WEATHER
+================================================================ */
+function renderStationChips() {
+  document.getElementById('station-chips').innerHTML = WEATHER_STATIONS.map(s => `
+    <button class="station-chip ${s.id === activeStation ? 'active' : ''}"
+            onclick="selectStation('${s.id}')">${s.name}</button>
+  `).join('');
+}
+
+function selectStation(id) {
+  activeStation = id;
+  renderStationChips();
+  renderWeatherGrid();
+}
+
+async function fetchWeather() {
+  try {
+    // Use Open-Meteo for each station (free, no key needed)
+    const promises = WEATHER_STATIONS.map(s =>
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${s.lat}&longitude=${s.lng}&current=temperature_2m,wind_speed_10m,wind_gusts_10m,precipitation,weather_code,relative_humidity_2m&wind_speed_unit=ms&timezone=Atlantic%2FReykjavik`)
+        .then(r => r.json())
+        .then(d => ({ id: s.id, data: d.current }))
+    );
+    const results = await Promise.allSettled(promises);
+    results.forEach(r => {
+      if (r.status === 'fulfilled') {
+        weatherData[r.value.id] = r.value.data;
+      }
+    });
+    renderWeatherGrid();
+    updateStatusBar();
+    updateTime();
+  } catch(e) {
+    console.warn('Weather fetch failed', e);
   }
+}
 
-  // 7-day forecast per campsite location
-  const sh2=document.createElement('div');sh2.className='sh';sh2.style.paddingTop='14px';
-  sh2.innerHTML='9-DAY FORECAST BY LOCATION <span style="font-size:9px;font-weight:400;color:var(--muted)">· max°/min° · wind m/s · source: Open-Meteo</span>';
-  c.appendChild(sh2);
-  const seen=new Set();
-  SITES.forEach(site=>{
-    if(seen.has(site.id))return;seen.add(site.id);
-    const d=wx[site.id];if(!d)return;
-    const days=d.time.slice(0,9).map((dt,i)=>{
-      const dow=new Date(dt+'T12:00').toLocaleDateString('en-US',{weekday:'short'}).slice(0,3).toUpperCase();
-      const isToday2=dt===today();
-      return`<div class="fday${isToday2?' camp':''}"><div class="fdow">${isToday2?'TODAY':dow}</div><div class="fic">${WXI[d.weathercode[i]]||'❓'}</div><div class="fhi">${Math.round(d.temperature_2m_max[i])}°</div><div class="flo">${Math.round(d.temperature_2m_min[i])}°</div><div class="fwd">${Math.round(d.windspeed_10m_max[i])}m/s</div></div>`;
-    }).join('');
-    const el=document.createElement('div');el.className='wloc';
-    el.innerHTML=`<div class="wlh"><div><div class="wln">${site.name}</div><div class="wlr">${site.region}</div></div></div><div class="fscroll">${days}</div>`;
-    c.appendChild(el);
+function renderWeatherGrid() {
+  const d = weatherData[activeStation];
+  if (!d) {
+    document.getElementById('weather-grid').innerHTML =
+      '<div class="loading-state" style="grid-column:1/-1"><div class="spinner"></div>Loading…</div>';
+    return;
+  }
+  const ws = d.wind_speed_10m;
+  const wc = windClass(ws);
+  document.getElementById('weather-grid').innerHTML = `
+    <div class="weather-stat">
+      <div class="weather-stat-label">Temperature</div>
+      <div class="weather-stat-value">${Math.round(d.temperature_2m)}<span class="weather-stat-unit">°C</span></div>
+    </div>
+    <div class="weather-stat">
+      <div class="weather-stat-label">Wind Speed</div>
+      <div class="weather-stat-value ${wc}">${Math.round(ws)}<span class="weather-stat-unit">m/s</span></div>
+    </div>
+    <div class="weather-stat">
+      <div class="weather-stat-label">Gusts</div>
+      <div class="weather-stat-value ${windClass(d.wind_gusts_10m)}">${Math.round(d.wind_gusts_10m)}<span class="weather-stat-unit">m/s</span></div>
+    </div>
+    <div class="weather-stat">
+      <div class="weather-stat-label">Precipitation</div>
+      <div class="weather-stat-value">${d.precipitation.toFixed(1)}<span class="weather-stat-unit">mm</span></div>
+    </div>
+    <div class="weather-stat">
+      <div class="weather-stat-label">Humidity</div>
+      <div class="weather-stat-value">${d.relative_humidity_2m}<span class="weather-stat-unit">%</span></div>
+    </div>
+    <div class="weather-stat">
+      <div class="weather-stat-label">Condition</div>
+      <div class="weather-stat-value" style="font-size:22px">${wmoIcon(d.weather_code)}</div>
+    </div>
+  `;
+  // Update wind markers
+  updateWindMarkers();
+}
+
+function windClass(ms) {
+  if (ms < 8) return 'wind-calm';
+  if (ms < 14) return 'wind-mod';
+  if (ms < 20) return 'wind-strong';
+  return 'wind-storm';
+}
+
+function windColor(ms) {
+  if (ms < 8) return '#3fb950';
+  if (ms < 14) return '#d29922';
+  if (ms < 20) return '#e3622e';
+  return '#f85149';
+}
+
+function wmoIcon(code) {
+  if (code === 0) return '☀️';
+  if (code <= 3) return '⛅';
+  if (code <= 9) return '🌫️';
+  if (code <= 29) return '🌧️';
+  if (code <= 39) return '🌫️';
+  if (code <= 49) return '🌫️';
+  if (code <= 59) return '🌧️';
+  if (code <= 69) return '❄️';
+  if (code <= 79) return '❄️';
+  if (code <= 89) return '⛈️';
+  if (code <= 99) return '⛈️';
+  return '🌡️';
+}
+
+function updateWindMarkers() {
+  windMarkers.forEach(m => map && map.removeLayer(m));
+  windMarkers = [];
+  if (!map) return;
+  WEATHER_STATIONS.forEach(s => {
+    const d = weatherData[s.id];
+    if (!d) return;
+    const ws = d.wind_speed_10m;
+    const color = windColor(ws);
+    const m = L.circleMarker([s.lat, s.lng], {
+      radius: 10, fillColor: color, color: '#0d1117',
+      weight: 1.5, fillOpacity: 0.8
+    });
+    m.bindTooltip(`${s.name}: ${Math.round(ws)} m/s`, { direction:'top', offset:[0,-8] });
+    m.on('click', () => openSheet('💨 ' + s.name, `Wind ${Math.round(ws)} m/s · Gusts ${Math.round(d.wind_gusts_10m)} m/s · ${Math.round(d.temperature_2m)}°C`, []));
+    if (windLayerOn) m.addTo(map);
+    windMarkers.push(m);
   });
 }
 
-async function init(){
-  const lf=document.getElementById('lf'),ls=document.getElementById('lstatus');
-  lf.style.width='5%';ls.textContent='Fetching live weather forecasts…';
-  await loadWx(p=>{lf.style.width=(p*0.6)+'%'});
-  lf.style.width='65%';ls.textContent='Loading road conditions…';
-  await fetchLiveRoads();
-  lf.style.width='80%';ls.textContent='Loading wind data…';
-  await fetchLiveWind();
-  lf.style.width='95%';ls.textContent='Building map…';
-  await new Promise(r=>setTimeout(r,150));
-  document.getElementById('loading').style.display='none';
-  document.getElementById('app').style.display='flex';
-  initMap();
-  buildWindLayer();
-  buildRoute();buildAttractions();buildWeatherTab();buildRoads();
+/* ================================================================
+   ROADS
+================================================================ */
+async function fetchRoads() {
+  try {
+    const res = await fetch('/api/roads');
+    const text = await res.text();
+    parseAndRenderRoads(text);
+  } catch(e) {
+    renderRoadsError();
+  }
 }
-init();
+
+function parseAndRenderRoads(xml) {
+  const el = document.getElementById('roads-list');
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xml, 'text/xml');
+    const items = doc.querySelectorAll('item');
+    if (!items.length) {
+      el.innerHTML = '<div class="empty-state"><div class="icon">✅</div>No active road alerts — all clear!</div>';
+      updateRoadStatus(false);
+      return;
+    }
+    let hasWarning = false, hasClosed = false;
+    const html = Array.from(items).map(item => {
+      const title = item.querySelector('title')?.textContent || 'Alert';
+      const desc = item.querySelector('description')?.textContent || '';
+      const pubDate = item.querySelector('pubDate')?.textContent || '';
+      let severity = 'info';
+      const t = title.toLowerCase();
+      if (t.includes('closed') || t.includes('lokað')) { severity = 'closed'; hasClosed = true; }
+      else if (t.includes('warning') || t.includes('viðvörun') || t.includes('slippery') || t.includes('icy')) { severity = 'warning'; hasWarning = true; }
+      const date = pubDate ? new Date(pubDate).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) : '';
+      return `
+        <div class="alert-banner ${severity}">
+          <div class="alert-title">${title}</div>
+          <div class="alert-desc">${desc.replace(/<[^>]*>/g,'').substring(0,200)}</div>
+          ${date ? `<div class="alert-meta">Updated ${date}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+    el.innerHTML = html;
+    updateRoadStatus(hasClosed, hasWarning);
+  } catch(e) {
+    renderRoadsError();
+  }
+}
+
+function renderRoadsError() {
+  document.getElementById('roads-list').innerHTML =
+    '<div class="empty-state"><div class="icon">📡</div>Could not fetch road alerts.<br>Check safetravel.is directly.</div>';
+}
+
+function updateRoadStatus(closed, warning) {
+  const dot = document.getElementById('road-dot');
+  const label = document.getElementById('road-label');
+  if (closed) { dot.className = 'dot danger'; label.textContent = 'Closures'; }
+  else if (warning) { dot.className = 'dot warn'; label.textContent = 'Warnings'; }
+  else { dot.className = 'dot'; label.textContent = 'Roads OK'; }
+}
+
+/* ================================================================
+   STATUS BAR
+================================================================ */
+function updateStatusBar() {
+  // Find max wind across all fetched stations
+  let maxWind = 0;
+  Object.values(weatherData).forEach(d => {
+    if (d && d.wind_speed_10m > maxWind) maxWind = d.wind_speed_10m;
+  });
+  const dot = document.getElementById('wind-dot');
+  const label = document.getElementById('wind-label');
+  const wc = windClass(maxWind);
+  dot.className = 'dot' + (wc === 'wind-calm' ? '' : wc === 'wind-mod' ? ' warn' : ' danger');
+  label.textContent = `${Math.round(maxWind)} m/s`;
+}
+
+function updateTime() {
+  document.getElementById('last-updated').textContent =
+    new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+}
+
+/* ================================================================
+   PWA + INSTALL
+================================================================ */
+function setupPWA() {
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    setTimeout(() => document.getElementById('install-banner').classList.add('show'), 3000);
+  });
+}
+
+function doInstall() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+  }
+  dismissInstall();
+}
+
+function dismissInstall() {
+  document.getElementById('install-banner').classList.remove('show');
+}
+
+/* ================================================================
+   OFFLINE
+================================================================ */
+function setupOfflineDetection() {
+  const toast = document.getElementById('offline-toast');
+  window.addEventListener('offline', () => toast.classList.add('show'));
+  window.addEventListener('online', () => setTimeout(() => toast.classList.remove('show'), 2000));
+  if (!navigator.onLine) toast.classList.add('show');
+}
+
+/* ================================================================
+   SERVICE WORKER (register)
+================================================================ */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
 </script>
 </body>
 </html>
