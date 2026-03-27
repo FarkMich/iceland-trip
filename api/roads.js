@@ -47,32 +47,26 @@ export default async function handler(req) {
   }
 
   try {
-    // road.is public endpoints - try their GeoJSON/open data feeds
-    // Vegagerdin publishes road conditions as open data
-    const attempts = [
-      'https://www.road.is/card/conditions',
-      'https://www.vegagerdin.is/umferdin/ferd-og-vegaskilyrdi/',
-      'https://www.road.is/travel-info/road-conditions-and-weather/',
-    ];
+    // Vegagerdin (road.is) open data feeds - GeoJSON format
+    // These are the actual machine-readable endpoints
+    const conditionsUrl = 'https://www.vegagerdin.is/vefthjonustur/leid?format=json';
+    const closedRoadsUrl = 'https://www.vegagerdin.is/vefthjonustur/lokunarlisti?format=json';
 
-    // Try fetching the road.is conditions page and extract data
-    const roadsUrl = 'https://www.road.is/travel-info/road-conditions-and-weather/';
-    const closuresUrl = 'https://www.road.is/travel-info/road-closures/';
+    // Also try their ATOM/RSS feed for closures
+    const atomUrl = 'https://www.road.is/travel-info/road-closures/?format=atom';
 
     const [condRes, closureRes] = await Promise.allSettled([
-      fetch(roadsUrl, {
+      fetch(conditionsUrl, {
         headers: {
-          'Accept': 'text/html,application/xhtml+xml,application/json',
+          'Accept': 'application/json, application/geo+json, */*',
           'User-Agent': 'Mozilla/5.0 (compatible; IcelandTravelApp/1.0)',
-          'Accept-Language': 'en-US,en;q=0.9',
         },
         signal: AbortSignal.timeout(8000)
       }),
-      fetch(closuresUrl, {
+      fetch(closedRoadsUrl, {
         headers: {
-          'Accept': 'text/html,application/xhtml+xml,application/json',
+          'Accept': 'application/json, application/geo+json, */*',
           'User-Agent': 'Mozilla/5.0 (compatible; IcelandTravelApp/1.0)',
-          'Accept-Language': 'en-US,en;q=0.9',
         },
         signal: AbortSignal.timeout(8000)
       })
@@ -80,21 +74,27 @@ export default async function handler(req) {
 
     let conditions = [];
     let closures = [];
-    let debugInfo = {};
+    let debugInfo = { condUrl: conditionsUrl };
 
-    if (condRes.status === 'fulfilled' && condRes.value.ok) {
+    if (condRes.status === 'fulfilled') {
       debugInfo.condStatus = condRes.value.status;
       debugInfo.condType = condRes.value.headers.get('content-type');
-      const raw = await condRes.value.json().catch(() => null);
-      if (raw) conditions = Array.isArray(raw) ? raw : (raw.features || raw.results || []);
-      else debugInfo.condNote = 'non-JSON response';
+      if (condRes.value.ok) {
+        const raw = await condRes.value.json().catch(async (e) => {
+          debugInfo.condNote = 'non-JSON: ' + e.message;
+          return null;
+        });
+        if (raw) conditions = Array.isArray(raw) ? raw : (raw.features || raw.results || raw.data || []);
+      } else {
+        debugInfo.condNote = `HTTP ${condRes.value.status}`;
+      }
     } else {
-      debugInfo.condFail = condRes.status === 'rejected' ? condRes.reason?.message : `HTTP ${condRes.value?.status}`;
+      debugInfo.condFail = condRes.reason?.message;
     }
 
     if (closureRes.status === 'fulfilled' && closureRes.value.ok) {
       const raw = await closureRes.value.json().catch(() => null);
-      if (raw) closures = Array.isArray(raw) ? raw : (raw.features || raw.results || []);
+      if (raw) closures = Array.isArray(raw) ? raw : (raw.features || raw.results || raw.data || []);
     }
 
     // Build summary for key routes
