@@ -148,9 +148,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .elink{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--text);cursor:pointer}
 .elink:active{background:var(--bg2)}
 .eli{font-size:22px}.elt .elt1{font-size:13px;font-weight:600}.elt .elt2{font-size:11px;color:var(--muted)}.ela{margin-left:auto;color:var(--muted);font-size:20px;font-weight:300}
-.cm{width:30px;height:30px;border-radius:50%;background:var(--accent);border:2.5px solid white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:var(--mono);color:#0d1b2a;box-shadow:0 2px 12px rgba(0,0,0,.5);cursor:pointer}
-.cm.today{background:var(--green);box-shadow:0 0 0 4px rgba(34,197,94,.25),0 2px 12px rgba(0,0,0,.5)}
-.cm.past{background:#1e3550;border-color:#334a66;color:var(--muted)}
+.cm{width:32px;height:32px;border-radius:50%;background:var(--bg3);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 12px rgba(0,0,0,.5);cursor:pointer}
 .am{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 2px 10px rgba(0,0,0,.5);cursor:pointer}
 .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -206,14 +204,30 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
 <script>
 const SITES=[
-  {id:'hellisholar',name:'Hellishólar',region:'South Iceland',n:1,date:'Mar 24',dstr:'2026-03-24',lat:63.7253,lon:-20.0384,price:'~6,300 kr/p',km:180,from:'Keflavík (2h)',sights:['Seljalandsfoss — walk behind the waterfall','Skógafoss waterfall','Eyjafjallajökull views'],note:'25-year age minimum. Restaurant on site.',aurora:2,seg:'s1'},
-  {id:'fossardalur',name:'Fossárdalur',region:'East Fjords',n:2,date:'Mar 25',dstr:'2026-03-25',lat:64.7558,lon:-14.4986,price:'~3,900 kr/p',km:430,from:'Hellishólar (5.5h)',sights:['Reynisfjara black beach','Jökulsárlón glacier lagoon','Diamond Beach'],note:'Rated 4.8★ — one of Iceland\'s best.',aurora:5,seg:'s2'},
-  {id:'bakkafjordur',name:'Bakkafjörður',region:'Far Northeast',n:3,date:'Mar 26',dstr:'2026-03-26',lat:66.0369,lon:-14.8029,price:'~3,000 kr/p',km:220,from:'Fossárdalur (3.5h)',sights:['East Fjords coastal road','Djúpivogur eggs','Digranes hike'],note:'Very remote and quiet.',aurora:5,seg:'s3'},
-  {id:'cja',name:'CJA Camping, Laugar',region:'North Iceland',n:4,date:'Mar 27',dstr:'2026-03-27',lat:65.7017,lon:-17.3498,price:'~3,200 kr/p',km:260,from:'Bakkafjörður (3.5h via Dettifoss)',sights:['Dettifoss waterfall','Lake Mývatn area','Laugar geothermal pool'],note:'Private hedged pitches. Legendary hosts.',aurora:5,seg:'s4'},
-  {id:'bakkaflot',name:'Bakkaflöt',region:'North · Skagafjörður',n:5,date:'Mar 28',dstr:'2026-03-28',lat:65.4633,lon:-19.3461,price:'~3,400 kr/p',km:150,from:'CJA Laugar (2h via Goðafoss)',sights:['Goðafoss waterfall','Hofsós infinity pool','Glaumbaer turf farm'],note:'Riverside. Hot tubs extra.',aurora:4,seg:'s5'},
-  {id:'snorrastadir',name:'Snorrastaðir',region:'West Iceland',n:6,date:'Mar 29',dstr:'2026-03-29',lat:64.7736,lon:-22.3012,price:'~3,800 kr/p',km:220,from:'Bakkaflöt (3h)',sights:['Borgarnes Settlement Centre','Eldborg crater walk at camp','Baby goats'],note:'Open all year. Great aurora spot.',aurora:4,seg:'s6'},
-  {id:'grundarfjordur',name:'Grundarfjörður',region:'Snæfellsnes',n:7,date:'Mar 30',dstr:'2026-03-30',lat:64.9206,lon:-23.2582,price:'~2,600 kr/p',km:100,from:'Snorrastaðir (1.5h)',sights:['Snæfellsjökull glacier','Arnarstapi sea cliffs','Kirkjufell at camp'],note:'Cheapest on route. Winter mode.',aurora:3,seg:'s7'},
-  {id:'hellisholar2',name:'Hellishólar (night 8)',region:'South Iceland',n:8,date:'Mar 31',dstr:'2026-03-31',lat:63.7253,lon:-20.0384,price:'~6,300 kr/p',km:280,from:'Grundarfjörður (3.5h via Golden Circle)',sights:['Þingvellir National Park','Geysir eruptions','Gullfoss waterfall'],note:'Last night. 90 min to airport.',aurora:2,seg:'s8'},
+  // REYKJAVIK & CAPITAL REGION
+  {id:'reykjavik',name:'Reykjavík Camping',region:'Capital Region',lat:64.1347,lon:-21.8936,price:'~1,800 kr/p',km:0,sights:['City centre 3km','Hallgrímskirkja church','Harpa concert hall'],note:'Year-round. Large site, central location.',aurora:2,season:'year'},
+  {id:'vogar',name:'Vogar Campsite',region:'Reykjanes Peninsula',lat:63.9973,lon:-22.3656,price:'~1,500 kr/p',km:45,sights:['Blue Lagoon nearby','Reykjanes lava fields','Keflavík airport 15min'],note:'Year-round. Convenient for airport.',aurora:3,season:'year'},
+  {id:'hveragerdi',name:'Reykjamörk, Hveragerði',region:'South · Capital area',lat:63.9930,lon:-21.1780,price:'~1,750 kr/p',km:45,sights:['Reykjadalur hot river hike','Geothermal park','Swimming pool nearby'],note:'Year-round. Near famous hot river valley.',aurora:3,season:'year'},
+  {id:'ulfljotsvatn',name:'Úlfljótsvatn',region:'South Iceland',lat:64.0517,lon:-21.0930,price:'~1,800 kr/p',km:60,sights:['Lake swimming','Golden Circle 30min','Þingvellir 20min'],note:'Year-round. Beautiful lakeside setting.',aurora:3,season:'year'},
+  {id:'selfoss',name:'Selfoss Campsite',region:'South Iceland',lat:63.9310,lon:-21.0070,price:'~1,800 kr/p',km:60,sights:['Þórsmörk access','Golden Circle nearby','Seljalandsfoss 40min'],note:'Year-round. Well-equipped town campsite.',aurora:3,season:'year'},
+  // SOUTH COAST
+  {id:'skogakot',name:'Skógakot / Skógar',region:'South Coast',lat:63.5316,lon:-19.5142,price:'~2,000 kr/p',km:155,sights:['Skógafoss waterfall steps away','Fimmvörðuháls trailhead','Folk Museum'],note:'Year-round. Right next to Skógafoss.',aurora:4,season:'year'},
+  {id:'kleifar',name:'Kleifar, Kirkjubæjarklaustur',region:'South Coast',lat:63.7834,lon:-18.0622,price:'~1,000 kr/p',km:270,sights:['Stjórnarfoss waterfall at camp','Fjaðrárgljúfur canyon 10min','Lakagigar lava craters nearby'],note:'Year-round. 2.5km from Kirkjubæjarklaustur. Stjórnarfoss waterfall on site.',aurora:4,season:'year'},
+  {id:'skaftafell',name:'Skaftafell Campground',region:'Vatnajökull NP · Southeast',lat:64.0167,lon:-16.9667,price:'~1,750 kr/p',km:330,sights:['Svartifoss black waterfall','Skaftafellsjökull glacier','Hvannadalshnjúkur trailhead'],note:'Year-round. Inside Vatnajökull National Park. Iceland\'s most scenic campsite.',aurora:5,season:'year'},
+  {id:'svinafell',name:'Svínafell Campsite',region:'Southeast Iceland',lat:64.0100,lon:-16.8700,price:'~1,800 kr/p',km:340,sights:['Jökulsárlón 25min','Diamond Beach','Glacier hiking base'],note:'Year-round (sleeping bag rooms). Near Vatnajökull.',aurora:5,season:'year'},
+  // EAST
+  {id:'hofn',name:'Höfn Campsite',region:'East Iceland',lat:64.2537,lon:-15.2082,price:'~1,800 kr/p',km:460,sights:['Glacier views','Lobster capital of Iceland','Jökulsárlón 80km'],note:'Year-round. Gateway to Vatnajökull.',aurora:5,season:'year'},
+  {id:'fossardalur',name:'Fossárdalur',region:'East Fjords',lat:64.7558,lon:-14.4986,price:'~1,500 kr/p',km:550,sights:['East Fjords coastal road','Djúpivogur art eggs','Berufjörður views'],note:'Year-round. Rated 4.8★ — one of Iceland\'s best.',aurora:5,season:'year'},
+  {id:'egilsstadir',name:'Camp Egilsstaðir',region:'East Iceland',lat:65.2667,lon:-14.3958,price:'~2,000 kr/p',km:620,sights:['Hallormsstaður forest walks','Lagarfljót lake','Seyðisfjörður fjord 25min'],note:'Year-round. Capital of East Iceland. Pre-booking required.',aurora:5,season:'year'},
+  {id:'vopnafjordur',name:'Vopnafjörður Campsite',region:'Northeast Iceland',lat:65.7519,lon:-14.8508,price:'~1,500 kr/p',km:700,sights:['Remote East Fjords','Bustarfell heritage museum','Salmon fishing'],note:'Year-round. Off the beaten track.',aurora:5,season:'year'},
+  // NORTH
+  {id:'modrudalur',name:'Möðrudalur á Fjöllum',region:'Northeast Highlands',lat:65.3575,lon:-16.1921,price:'~2,000 kr/p',km:680,sights:['Highest farm in Iceland','Dettifoss 60km','Remote highland scenery'],note:'Year-round. Most remote campsite on this list.',aurora:5,season:'year'},
+  {id:'hlid_myvatn',name:'Hlíð, Mývatn',region:'North Iceland',lat:65.5880,lon:-17.0050,price:'~1,900 kr/p',km:740,sights:['Lake Mývatn birdwatching','Námaskarð geothermal field','Dimmuborgir lava formations'],note:'Year-round. Best base for Mývatn area.',aurora:5,season:'year'},
+  {id:'cja',name:'CJA Camping, Laugar',region:'North Iceland',lat:65.7017,lon:-17.3498,price:'~1,600 kr/p',km:780,sights:['Goðafoss 30min','Laugar geothermal pool','Private hedged pitches'],note:'Year-round. Legendary hosts. Private pitches.',aurora:5,season:'year'},
+  {id:'hamrar',name:'Hamrar, Akureyri',region:'North Iceland · Akureyri',lat:65.6700,lon:-18.0750,price:'~1,900 kr/p',km:830,sights:['Kjarnaskógur forest walks','Akureyri town 3km','Hlíðafjall ski slope nearby'],note:'Year-round. Best facilities in North Iceland.',aurora:4,season:'year'},
+  // NORTHWEST & WEST
+  {id:'stykkisholmur',name:'Stykkishólmur Campsite',region:'Snæfellsnes',lat:65.0712,lon:-22.7312,price:'~1,800 kr/p',km:170,sights:['Snæfellsnes Peninsula','Ferry to Westfjords','Library of Water art installation'],note:'Year-round. Gateway to Snæfellsnes.',aurora:3,season:'year'},
+  {id:'garður',name:'Garður Campsite',region:'Reykjanes Peninsula',lat:64.0830,lon:-22.6918,price:'~1,500 kr/p',km:50,sights:['Two lighthouses','Birdwatching','Keflavík airport 10min'],note:'Year-round. Great bird spotting.',aurora:3,season:'year'},
 ];
 
 const ATTRS=[
@@ -299,13 +313,8 @@ function initMap(){
 
   campGroup=L.layerGroup().addTo(mapInst);
   SITES.forEach(site=>{
-    if(site.id==='hellisholar2')return;
-    const cls=isToday(site)?'today':isPast(site)?'past':'';
-    const m=L.marker([site.lat,site.lon],{icon:L.divIcon({html:`<div class="cm ${cls}">${site.n}</div>`,iconSize:[30,30],iconAnchor:[15,15],className:''})}).addTo(campGroup);
-    // Fix: bind popup once, open on click (not re-bind each time which breaks re-clicking)
-    const w=wxForDate(site.id,site.dstr),seg=SEGS[site.seg];
-    const wxh=w?`<div class="pw">${WXI[w.code]||'❓'} <b>${w.hi}°/${w.lo}°</b> · ${w.wind}m/s ${w.dir}</div>`:'<div class="pw" style="color:var(--muted)">–</div>';
-    m.bindPopup(`<div class="pn">Night ${site.n} — ${site.name}</div><div class="pm">${site.date} · ${site.region}</div>${wxh}<div class="pp">${site.price} incl. elec+tax</div><div class="prb ${prclass(seg.status)}">${slabel(seg.status)}</div><div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:4px">${seg.note}</div>`,{maxWidth:260});
+    const m=L.marker([site.lat,site.lon],{icon:L.divIcon({html:`<div class="cm">⛺</div>`,iconSize:[30,30],iconAnchor:[15,15],className:''})}).addTo(campGroup);
+    m.bindPopup(`<div class="pn">${site.name}</div><div class="pm">${site.region}</div><div style="font-size:12px;color:var(--muted);margin:6px 0;line-height:1.5">${site.note}</div><div class="pp">${site.price} per person</div><a href="https://www.google.com/maps/search/?api=1&query=${site.lat},${site.lon}" target="_blank" rel="noopener" style="font-size:11px;color:var(--accent);font-family:var(--mono)">📍 Open in Maps</a>`,{maxWidth:240});
   });
 
   attrGroup=L.layerGroup().addTo(mapInst);
@@ -330,30 +339,36 @@ function toggleLayer(w){
 
 function buildRoute(){
   const c=document.getElementById('ilist');c.innerHTML='';
-  const sh=document.createElement('div');sh.className='sh';sh.style.paddingTop='14px';sh.textContent='CAMPSITES ALONG THE RING ROAD';c.appendChild(sh);
-  SITES.forEach((site,idx)=>{
-    if(site.id==='hellisholar2')return;
-    const w=wxForDate(site.id,site.dstr);
-    const wh=w?`<div class="wi">${WXI[w.code]||'❓'}</div><div class="wt">${w.hi}°</div>`:'';
-    const d=document.createElement('div');d.className='dc';
-    d.innerHTML=`<div class="dh">
-      <div class="dn" style="font-size:10px;padding:2px">⛺</div>
-      <div class="di">
-        <div class="dc-name">${site.name}</div>
-        <div class="dr">${site.region} · ${site.km}km from prev stop</div>
+  const regions=['Capital Region','Reykjanes Peninsula','South · Capital area','South Iceland','South Coast','Vatnajökull NP · Southeast','Southeast Iceland','East Iceland','East Fjords','Northeast Iceland','Northeast Highlands','North Iceland','North Iceland · Akureyri','Snæfellsnes'];
+  const grouped={};
+  SITES.forEach(s=>{
+    const r=s.region;
+    if(!grouped[r])grouped[r]=[];
+    grouped[r].push(s);
+  });
+  Object.entries(grouped).forEach(([region,sites])=>{
+    const sh=document.createElement('div');sh.className='sh';sh.style.paddingTop='14px';sh.textContent=region.toUpperCase();c.appendChild(sh);
+    sites.forEach((site,idx)=>{
+      const uid=site.id+'_card';
+      const d=document.createElement('div');d.className='dc';
+      d.innerHTML=`<div class="dh">
+        <div class="dn" style="font-size:16px;background:var(--bg3)">⛺</div>
+        <div class="di">
+          <div class="dc-name">${site.name}</div>
+          <div class="dr">${site.price} per person</div>
+        </div>
+        <div class="dw" style="font-size:11px;font-family:var(--mono);color:var(--green);text-align:right">YEAR<br>ROUND</div>
       </div>
-      <div class="dw">${wh}</div>
-    </div>
-    <div class="db" id="db${idx}">
-      <hr class="divr">
-      <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:8px">📍 <a href="https://www.google.com/maps/search/?api=1&query=${site.lat},${site.lon}" target="_blank" rel="noopener" style="color:var(--accent)">Open in Google Maps</a></div>
-      <div class="chips"><span class="chip cp">${site.price}</span><span class="chip cd">🚗 ${site.km}km</span></div>
-      <div class="aurora"><span class="al">🌌 Aurora potential</span><span class="as">${stars(site.aurora)}</span></div>
-      <div class="sl">${site.sights.map(s=>`<div class="si">${s}</div>`).join('')}</div>
-      <div class="snn">${site.note}</div>
-    </div>`;
-    d.querySelector('.dh').addEventListener('click',()=>document.getElementById('db'+idx).classList.toggle('open'));
-    c.appendChild(d);
+      <div class="db" id="${uid}">
+        <hr class="divr">
+        <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:8px">📍 <a href="https://www.google.com/maps/search/?api=1&query=${site.lat},${site.lon}" target="_blank" rel="noopener" style="color:var(--accent)">Open in Google Maps</a></div>
+        <div class="aurora"><span class="al">🌌 Aurora potential</span><span class="as">${stars(site.aurora)}</span></div>
+        <div class="sl">${site.sights.map(s=>`<div class="si">${s}</div>`).join('')}</div>
+        <div class="snn">${site.note}</div>
+      </div>`;
+      d.querySelector('.dh').addEventListener('click',()=>document.getElementById(uid).classList.toggle('open'));
+      c.appendChild(d);
+    });
   });
 }
 
