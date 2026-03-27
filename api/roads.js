@@ -47,34 +47,54 @@ export default async function handler(req) {
   }
 
   try {
-    // road.is public data endpoint - Vegagerdin road conditions
-    // This uses their GeoJSON/public feed, no auth required
-    const roadsUrl = 'https://www.road.is/api/v1/roadconditions';
-    const closuresUrl = 'https://www.road.is/api/v1/closures';
+    // road.is public endpoints - try their GeoJSON/open data feeds
+    // Vegagerdin publishes road conditions as open data
+    const attempts = [
+      'https://www.road.is/card/conditions',
+      'https://www.vegagerdin.is/umferdin/ferd-og-vegaskilyrdi/',
+      'https://www.road.is/travel-info/road-conditions-and-weather/',
+    ];
+
+    // Try fetching the road.is conditions page and extract data
+    const roadsUrl = 'https://www.road.is/travel-info/road-conditions-and-weather/';
+    const closuresUrl = 'https://www.road.is/travel-info/road-closures/';
 
     const [condRes, closureRes] = await Promise.allSettled([
       fetch(roadsUrl, {
-        headers: { 'Accept': 'application/json', 'User-Agent': 'IcelandTravelApp/1.0' },
+        headers: {
+          'Accept': 'text/html,application/xhtml+xml,application/json',
+          'User-Agent': 'Mozilla/5.0 (compatible; IcelandTravelApp/1.0)',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
         signal: AbortSignal.timeout(8000)
       }),
       fetch(closuresUrl, {
-        headers: { 'Accept': 'application/json', 'User-Agent': 'IcelandTravelApp/1.0' },
+        headers: {
+          'Accept': 'text/html,application/xhtml+xml,application/json',
+          'User-Agent': 'Mozilla/5.0 (compatible; IcelandTravelApp/1.0)',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
         signal: AbortSignal.timeout(8000)
       })
     ]);
 
     let conditions = [];
     let closures = [];
+    let debugInfo = {};
 
     if (condRes.status === 'fulfilled' && condRes.value.ok) {
-      const raw = await condRes.value.json();
-      // road.is returns array of road segment objects
-      conditions = Array.isArray(raw) ? raw : (raw.features || raw.results || []);
+      debugInfo.condStatus = condRes.value.status;
+      debugInfo.condType = condRes.value.headers.get('content-type');
+      const raw = await condRes.value.json().catch(() => null);
+      if (raw) conditions = Array.isArray(raw) ? raw : (raw.features || raw.results || []);
+      else debugInfo.condNote = 'non-JSON response';
+    } else {
+      debugInfo.condFail = condRes.status === 'rejected' ? condRes.reason?.message : `HTTP ${condRes.value?.status}`;
     }
 
     if (closureRes.status === 'fulfilled' && closureRes.value.ok) {
-      const raw = await closureRes.value.json();
-      closures = Array.isArray(raw) ? raw : (raw.features || raw.results || []);
+      const raw = await closureRes.value.json().catch(() => null);
+      if (raw) closures = Array.isArray(raw) ? raw : (raw.features || raw.results || []);
     }
 
     // Build summary for key routes
@@ -139,6 +159,7 @@ export default async function handler(req) {
       routes: routeSummaries,
       activeClosures,
       rawConditionCount: conditions.length,
+      _debug: debugInfo,
     };
 
     return new Response(JSON.stringify(payload), {
