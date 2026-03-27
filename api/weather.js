@@ -98,13 +98,14 @@ export default async function handler(req) {
                         block.match(/<id>([^<]+)<\/id>/)?.[1];
 
       const tempRaw = getId('T');
-      // vedur.is uses 'F' for mean wind speed and 'FX' for max gust in their XML
-      // Try multiple field names as their schema varies
-      const windRaw = getId('F') || getId('W') || getId('FF');   // mean wind speed m/s
-      const gustRaw = getId('FX') || getId('FG');                // max gust m/s
-      const maxGustRaw = getId('FX') || getId('FG');
-      const dirRaw = getId('D') || getId('DD');                  // direction degrees
-      const pressRaw = getId('P') || getId('N');
+      // Confirmed from vedur.is XML: W=mean wind speed, F=gust, FX=max gust, D=direction
+      const windRaw = getId('W');    // mean wind speed m/s
+      const gustRaw = getId('F');    // wind gust m/s
+      const maxGustRaw = getId('FX');
+      // Direction comes as attribute value or element - try both patterns
+      const dirBlock = block.match(/<D[^>]*>([^<]*)<\/D>/);
+      const dirRaw = dirBlock ? dirBlock[1].trim() : null;
+      const pressRaw = getId('P');
       const timeRaw = getId('time') || getId('obs_time') || getId('created');
 
       const windMs = windRaw && windRaw !== 'N/A' ? parseFloat(windRaw) : null;
