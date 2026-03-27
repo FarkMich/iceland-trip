@@ -99,21 +99,20 @@ export default async function handler(req) {
                         block.match(/<id>([^<]+)<\/id>/)?.[1];
 
       const tempRaw = getId('T');
-      // Confirmed from vedur.is XML: W=mean wind speed, F=gust, FX=max gust, D=direction
-      const windRaw = getId('W');    // mean wind speed m/s
-      const gustRaw = getId('F');    // wind gust m/s
+      // Confirmed from raw XML: <W></W> is empty, <F> = wind speed m/s, <FX> = max gust, <D> = text direction e.g. "NNW"
+      const windRaw = getId('F');    // wind speed m/s (vedur.is uses F for mean wind)
+      const gustRaw = getId('FX');   // max gust m/s
       const maxGustRaw = getId('FX');
-      // Direction comes as attribute value or element - try both patterns
-      const dirBlock = block.match(/<D[^>]*>([^<]*)<\/D>/);
-      const dirRaw = dirBlock ? dirBlock[1].trim() : null;
+      const dirTextRaw = getId('D'); // direction as text: "NNW", "SW" etc - NOT degrees
       const pressRaw = getId('P');
       const timeRaw = getId('time') || getId('obs_time') || getId('created');
 
-      const windMs = windRaw && windRaw !== 'N/A' ? parseFloat(windRaw) : null;
-      const gustMs = gustRaw && gustRaw !== 'N/A' ? parseFloat(gustRaw) : null;
-      const maxGustMs = maxGustRaw && maxGustRaw !== 'N/A' ? parseFloat(maxGustRaw) : null;
-      const dirDeg = dirRaw && dirRaw !== 'N/A' ? parseFloat(dirRaw) : null;
-      const temp = tempRaw && tempRaw !== 'N/A' ? parseFloat(tempRaw) : null;
+      const windMs = windRaw && windRaw !== 'N/A' && windRaw !== '' ? parseFloat(windRaw) : null;
+      const gustMs = gustRaw && gustRaw !== 'N/A' && gustRaw !== '' ? parseFloat(gustRaw) : null;
+      const maxGustMs = maxGustRaw && maxGustRaw !== 'N/A' && maxGustRaw !== '' ? parseFloat(maxGustRaw) : null;
+      // Direction is already a text label from vedur.is (NNW, SW, etc) - use directly
+      const directionLabel = dirTextRaw && dirTextRaw !== 'N/A' && dirTextRaw !== '' ? dirTextRaw : null;
+      const temp = tempRaw && tempRaw !== 'N/A' && tempRaw !== '' ? parseFloat(tempRaw) : null;
 
       // Debug: capture raw XML of first station block
       const rawTags = stationMatches.indexOf(match) === 0
@@ -137,8 +136,7 @@ export default async function handler(req) {
           speedMs: windMs,
           gustMs: gustMs,
           maxGustMs: maxGustMs,
-          directionDeg: dirDeg,
-          directionLabel: windDir(dirDeg),
+          directionLabel: directionLabel || '–',
           label: windInfo.label,
           beaufort: windInfo.level,
           severity: windSeverity(windMs),
