@@ -283,8 +283,15 @@ function wxForDate(id,dstr){
 function initMap(){
   mapInst=L.map('map',{zoomControl:false,attributionControl:false}).setView([65,-18.5],6);
 
-  // Base dark map - includes road network, visible on zoom
+  // Base dark map
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(mapInst);
+
+  // Road overlay - OSM standard tiles at low opacity, shows road network clearly
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:19,
+    opacity:0.18,
+    attribution:'© OpenStreetMap contributors'
+  }).addTo(mapInst);
 
   L.control.zoom({position:'topright'}).addTo(mapInst);
   // Removed: trip route polyline (personal trip specific)
