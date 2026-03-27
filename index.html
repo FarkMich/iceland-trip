@@ -286,11 +286,12 @@ function initMap(){
   // Base dark map
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(mapInst);
 
-  // Road overlay - OSM standard tiles at low opacity, shows road network clearly
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  // Road overlay - ESRI Reference/Boundaries overlay (transparent background, roads+labels only)
+  // Free, no auth, designed to be overlaid on any basemap
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',{
     maxZoom:19,
-    opacity:0.18,
-    attribution:'© OpenStreetMap contributors'
+    opacity:0.4,
+    attribution:'Roads © ESRI'
   }).addTo(mapInst);
 
   L.control.zoom({position:'topright'}).addTo(mapInst);
