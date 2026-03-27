@@ -282,29 +282,38 @@ function wxForDate(id,dstr){
 
 function initMap(){
   mapInst=L.map('map',{zoomControl:false,attributionControl:false}).setView([65,-18.5],6);
+
+  // Base dark map
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(mapInst);
+
+  // Road network overlay - OSM roads rendered on transparent background
+  L.tileLayer('https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png',{maxZoom:19,opacity:0}).addTo(mapInst); // placeholder, use below
+  // Use Stamen toner-lines which shows road network clearly on dark maps
+  L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_toner_lines/{z}/{x}/{y}{r}.png',{
+    maxZoom:19,opacity:0.35,
+    attribution:'Roads © OpenStreetMap'
+  }).addTo(mapInst);
+
   L.control.zoom({position:'topright'}).addTo(mapInst);
-  L.polyline(SITES.map(s=>[s.lat,s.lon]),{color:'#38bdf8',weight:2.5,opacity:.45,dashArray:'7 5'}).addTo(mapInst);
+  // Removed: trip route polyline (personal trip specific)
 
   campGroup=L.layerGroup().addTo(mapInst);
   SITES.forEach(site=>{
     if(site.id==='hellisholar2')return;
     const cls=isToday(site)?'today':isPast(site)?'past':'';
     const m=L.marker([site.lat,site.lon],{icon:L.divIcon({html:`<div class="cm ${cls}">${site.n}</div>`,iconSize:[30,30],iconAnchor:[15,15],className:''})}).addTo(campGroup);
-    m.on('click',()=>{
-      const w=wxForDate(site.id,site.dstr),seg=SEGS[site.seg];
-      const wxh=w?`<div class="pw">${WXI[w.code]||'❓'} <b>${w.hi}°/${w.lo}°</b> · ${w.wind}m/s ${w.dir}</div>`:'<div class="pw" style="color:var(--muted)">Loading…</div>';
-      m.bindPopup(`<div class="pn">Night ${site.n} — ${site.name}</div><div class="pm">${site.date} · ${site.region}</div>${wxh}<div class="pp">${site.price} incl. elec+tax</div><div class="prb ${prclass(seg.status)}">${slabel(seg.status)}</div><div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:4px">${seg.note}</div>`,{maxWidth:260}).openPopup();
-    });
+    // Fix: bind popup once, open on click (not re-bind each time which breaks re-clicking)
+    const w=wxForDate(site.id,site.dstr),seg=SEGS[site.seg];
+    const wxh=w?`<div class="pw">${WXI[w.code]||'❓'} <b>${w.hi}°/${w.lo}°</b> · ${w.wind}m/s ${w.dir}</div>`:'<div class="pw" style="color:var(--muted)">–</div>';
+    m.bindPopup(`<div class="pn">Night ${site.n} — ${site.name}</div><div class="pm">${site.date} · ${site.region}</div>${wxh}<div class="pp">${site.price} incl. elec+tax</div><div class="prb ${prclass(seg.status)}">${slabel(seg.status)}</div><div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:4px">${seg.note}</div>`,{maxWidth:260});
   });
 
   attrGroup=L.layerGroup().addTo(mapInst);
   ATTRS.forEach(a=>{
     const bg=ATTR_COLORS[a.type]||'#f97316';
     const m=L.marker([a.lat,a.lon],{icon:L.divIcon({html:`<div class="am" style="background:${bg}28;border:2px solid ${bg}77">${a.icon}</div>`,iconSize:[28,28],iconAnchor:[14,14],className:''})}).addTo(attrGroup);
-    m.on('click',()=>{
-      m.bindPopup(`<div class="pn">${a.icon} ${a.name}</div><div class="attr-typebadge ${a.typeClass}">${a.typeLabel}</div><div style="font-size:12px;color:var(--muted);line-height:1.55">${a.desc}</div><div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:7px">📅 ${a.day}&nbsp;&nbsp;⏱ ${a.time}${a.must?'&nbsp;&nbsp;⭐ Must-see':''}</div>`,{maxWidth:275}).openPopup();
-    });
+    // Fix: bind popup once upfront
+    m.bindPopup(`<div class="pn">${a.icon} ${a.name}</div><div class="attr-typebadge ${a.typeClass}">${a.typeLabel}</div><div style="font-size:12px;color:var(--muted);line-height:1.55">${a.desc}</div><div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:7px">📅 ${a.day}&nbsp;&nbsp;⏱ ${a.time}${a.must?'&nbsp;&nbsp;⭐ Must-see':''}</div>`,{maxWidth:275});
   });
 }
 
@@ -456,20 +465,19 @@ function buildWindLayer(){
     });
 
     const m=L.marker([st.lat,st.lon],{icon}).addTo(windGroup);
-      m.on('click',()=>{
-        const warn=st.wind.campervanWarning?'<div style="font-size:10px;background:#1a100a;color:var(--amber);border:1px solid #3a2010;border-radius:6px;padding:2px 8px;margin-top:6px;font-family:var(--mono)">⚠ Campervan caution</div>':'';
-        m.bindPopup(`
-          <div class="pn">${st.name}</div>
-          <div class="pm">${st.region}</div>
-          <div style="font-size:13px;margin:6px 0;font-family:var(--mono)">
-            💨 ${ms} m/s ${dir}${st.wind.gustMs?` · gust ${st.wind.gustMs.toFixed(1)}`:''}<br>
-            <span style="color:${col};font-size:11px">${st.wind.label||''}</span>
-          </div>
-          ${st.temperature!==null?`<div style="font-size:12px;color:var(--muted)">🌡 ${st.temperature}°C</div>`:''}
-          ${warn}
-          <div style="font-size:9px;color:var(--muted);font-family:var(--mono);margin-top:6px">vedur.is · ${st.observedAt||'recent'}</div>
-        `,{maxWidth:230}).openPopup();
-      });
+    const warn=st.wind.campervanWarning?'<div style="font-size:10px;background:#1a100a;color:var(--amber);border:1px solid #3a2010;border-radius:6px;padding:2px 8px;margin-top:6px;font-family:var(--mono)">⚠ Campervan caution</div>':'';
+    const popupHtml=`
+      <div class="pn">${st.name}</div>
+      <div class="pm">${st.region}</div>
+      <div style="font-size:13px;margin:6px 0;font-family:var(--mono)">
+        💨 ${ms} m/s ${dir}${st.wind.gustMs?` · gust ${st.wind.gustMs.toFixed(1)}`:''}<br>
+        <span style="color:${col};font-size:11px">${st.wind.label||''}</span>
+      </div>
+      ${st.temperature!==null?`<div style="font-size:12px;color:var(--muted)">🌡 ${st.temperature}°C</div>`:''}
+      ${warn}
+      <div style="font-size:9px;color:var(--muted);font-family:var(--mono);margin-top:6px">vedur.is · ${st.observedAt||'recent'}</div>
+    `;
+    m.bindPopup(popupHtml,{maxWidth:230});
   });
 
   if(layerState.wind)windGroup.addTo(mapInst);
