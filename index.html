@@ -176,7 +176,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
   </div>
   <div id="tabs">
     <div class="tab active" data-p="mp"><span class="ti2">🗺</span>MAP</div>
-    <div class="tab" data-p="ip"><span class="ti2">📅</span>ROUTE</div>
+    <div class="tab" data-p="ip"><span class="ti2">⛺</span>CAMPSITES</div>
     <div class="tab" data-p="ap"><span class="ti2">🏔</span>SIGHTS</div>
     <div class="tab" data-p="wp"><span class="ti2">🌦</span>WEATHER</div>
     <div class="tab" data-p="rp"><span class="ti2">🚧</span>ROADS</div>
@@ -189,7 +189,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
           <div class="dot dot-camp"></div>Campsites
         </div>
         <div class="map-toggle on" id="tog-attr" onclick="toggleLayer('attr')">
-          <div class="dot dot-attr"></div>Attractions
+          <div class="dot dot-attr"></div>Sights
         </div>
         <div class="map-toggle" id="tog-wind" onclick="toggleLayer('wind')">
           <div class="dot dot-wind"></div>Wind
@@ -198,7 +198,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
     </div>
     <div id="ip" class="panel"><div id="ilist"></div><div class="bp"></div></div>
     <div id="ap" class="panel"><div id="alist"></div><div class="bp"></div></div>
-    <div id="wp" class="panel"><div class="sh">7-DAY FORECAST PER CAMPSITE</div><div id="wlist"></div><div class="bp"></div></div>
+    <div id="wp" class="panel"><div id="wlist"></div><div class="bp"></div></div>
     <div id="rp" class="panel"><div id="rcontent"></div><div class="bp"></div></div>
   </div>
 </div>
@@ -330,12 +330,28 @@ function toggleLayer(w){
 
 function buildRoute(){
   const c=document.getElementById('ilist');c.innerHTML='';
+  const sh=document.createElement('div');sh.className='sh';sh.style.paddingTop='14px';sh.textContent='CAMPSITES ALONG THE RING ROAD';c.appendChild(sh);
   SITES.forEach((site,idx)=>{
-    const w=wxForDate(site.id,site.dstr),tc=isToday(site)?'today':isPast(site)?'past':'';
-    const wh=w?`<div class="wi">${WXI[w.code]||'❓'}</div><div class="wt">${w.hi}°</div>`:'<span class="spinner"></span>';
-    const seg=SEGS[site.seg];
+    if(site.id==='hellisholar2')return;
+    const w=wxForDate(site.id,site.dstr);
+    const wh=w?`<div class="wi">${WXI[w.code]||'❓'}</div><div class="wt">${w.hi}°</div>`:'';
     const d=document.createElement('div');d.className='dc';
-    d.innerHTML=`<div class="dh"><div class="dn ${tc}">${site.n}</div><div class="di"><div class="dd">${site.date} · Night ${site.n}</div><div class="dc-name">${site.name}</div><div class="dr">${site.region}</div></div><div class="dw">${wh}</div></div><div class="db" id="db${idx}"><hr class="divr"><div class="chips"><span class="chip cp">${site.price}</span><span class="chip cd">🚗 ${site.km}km</span><span class="chip ${seg.status==='open'?'co':'cw'}">${slabel(seg.status)}</span></div><div class="aurora"><span class="al">🌌 Aurora</span><span class="as">${stars(site.aurora)}</span></div><div class="sl">${site.sights.map(s=>`<div class="si">${s}</div>`).join('')}</div><div class="snn">${site.note}</div></div>`;
+    d.innerHTML=`<div class="dh">
+      <div class="dn" style="font-size:10px;padding:2px">⛺</div>
+      <div class="di">
+        <div class="dc-name">${site.name}</div>
+        <div class="dr">${site.region} · ${site.km}km from prev stop</div>
+      </div>
+      <div class="dw">${wh}</div>
+    </div>
+    <div class="db" id="db${idx}">
+      <hr class="divr">
+      <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:8px">📍 <a href="https://www.google.com/maps/search/?api=1&query=${site.lat},${site.lon}" target="_blank" rel="noopener" style="color:var(--accent)">Open in Google Maps</a></div>
+      <div class="chips"><span class="chip cp">${site.price}</span><span class="chip cd">🚗 ${site.km}km</span></div>
+      <div class="aurora"><span class="al">🌌 Aurora potential</span><span class="as">${stars(site.aurora)}</span></div>
+      <div class="sl">${site.sights.map(s=>`<div class="si">${s}</div>`).join('')}</div>
+      <div class="snn">${site.note}</div>
+    </div>`;
     d.querySelector('.dh').addEventListener('click',()=>document.getElementById('db'+idx).classList.toggle('open'));
     c.appendChild(d);
   });
@@ -343,67 +359,39 @@ function buildRoute(){
 
 function buildAttractions(){
   const c=document.getElementById('alist');c.innerHTML='';
-  const groups=[
-    {label:'DAY 1 · South Coast',ids:['seljalandsfoss','skogafoss']},
-    {label:'DAY 2 · South Coast → East',ids:['reynisfjara','jokulsarlon','diamond','vestrahorn']},
-    {label:'DAY 3 · East Fjords',ids:[]},
-    {label:'DAY 4 · Northeast → North',ids:['dettifoss','namaskar']},
-    {label:'DAY 5 · North Iceland',ids:['godafoss','glaumbaer']},
-    {label:'DAY 6 · West Iceland',ids:['eldborg']},
-    {label:'DAY 7 · Snæfellsnes Peninsula',ids:['snaefellsjokull','arnarstapi','kirkjufell']},
-    {label:'DAY 8 · Golden Circle',ids:['thingvellir','geysir','gullfoss']},
+  const regions=[
+    {label:'South Coast',ids:['seljalandsfoss','skogafoss','reynisfjara']},
+    {label:'Southeast',ids:['jokulsarlon','diamond','vestrahorn']},
+    {label:'Northeast',ids:['dettifoss','namaskar']},
+    {label:'North Iceland',ids:['godafoss','glaumbaer']},
+    {label:'West Iceland',ids:['eldborg']},
+    {label:'Snæfellsnes Peninsula',ids:['snaefellsjokull','arnarstapi','kirkjufell']},
+    {label:'Golden Circle',ids:['thingvellir','geysir','gullfoss']},
   ];
-  groups.forEach(g=>{
-    const sh=document.createElement('div');sh.className='sh';sh.style.paddingTop='14px';sh.textContent=g.label;c.appendChild(sh);
-    if(g.ids.length===0){
-      const none=document.createElement('div');none.style.cssText='margin:0 12px 8px;font-size:12px;color:var(--muted);padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--r)';none.textContent='Drive day through East Fjords — the scenic road itself is the attraction. Take your time.';c.appendChild(none);return;
-    }
+  regions.forEach(g=>{
+    const sh=document.createElement('div');sh.className='sh';sh.style.paddingTop='14px';sh.textContent=g.label.toUpperCase();c.appendChild(sh);
     g.ids.forEach(id=>{
       const a=ATTRS.find(x=>x.id===id);if(!a)return;
       const card=document.createElement('div');card.className='attr-card';
-      card.innerHTML=`<div class="attr-card-head"><div class="attr-icon">${a.icon}</div><div><div class="attr-name">${a.name}${a.must?' ⭐':''}</div><div class="attr-sub">${a.typeLabel} · ⏱ ${a.time}</div></div></div><div class="attr-desc">${a.desc}</div><div class="attr-tags"><span class="tag tag-day">${a.day}</span>${a.must?'<span class="tag tag-must">⭐ Must-see</span>':''}</div>`;
+      card.innerHTML=`
+        <div class="attr-card-head">
+          <div class="attr-icon">${a.icon}</div>
+          <div style="flex:1">
+            <div class="attr-name">${a.name}${a.must?' ⭐':''}</div>
+            <div class="attr-sub">${a.typeLabel} · ⏱ ${a.time}</div>
+          </div>
+          <a href="https://www.google.com/maps/search/?api=1&query=${a.lat},${a.lon}" target="_blank" rel="noopener" style="flex-shrink:0;font-size:18px;text-decoration:none;opacity:.7" title="Open in Google Maps">📍</a>
+        </div>
+        <div class="attr-desc">${a.desc}</div>
+        <div class="attr-tags">${a.must?'<span class="tag tag-must">⭐ Must-see</span>':''}</div>`;
       c.appendChild(card);
     });
   });
 }
 
-function buildWeather(){
-  const c=document.getElementById('wlist');c.innerHTML='';
-  SITES.forEach(site=>{
-    const d=wx[site.id];if(!d)return;
-    const days=d.time.slice(0,9).map((dt,i)=>{
-      const dow=new Date(dt+'T12:00').toLocaleDateString('en-US',{weekday:'short'}).slice(0,3).toUpperCase();
-      const isc=dt===site.dstr;
-      return`<div class="fday${isc?' camp':''}"><div class="fdow">${isc?'CAMP':dt===today()?'TODAY':dow}</div><div class="fic">${WXI[d.weathercode[i]]||'❓'}</div><div class="fhi">${Math.round(d.temperature_2m_max[i])}°</div><div class="flo">${Math.round(d.temperature_2m_min[i])}°</div><div class="fwd">${Math.round(d.windspeed_10m_max[i])}m/s</div></div>`;
-    }).join('');
-    const el=document.createElement('div');el.className='wloc';
-    el.innerHTML=`<div class="wlh"><div><div class="wln">${site.name}</div><div class="wlr">${site.region}</div></div><div class="wlni">Night ${site.n}</div></div><div class="fscroll">${days}</div>`;
-    c.appendChild(el);
-  });
-}
+function buildWeather_unused(){}
 
-function buildRoads(){
-  const c=document.getElementById('rcontent');
-  c.innerHTML=`<div class="sh" style="padding-top:14px">MARCH CONDITIONS</div>
-<div class="ralert green"><div class="rai">✅</div><div><div class="rat">Ring Road (Route 1) — Open all year</div><div class="rab">Fully paved. Late March can bring ice patches at night and at elevation. 4WD recommended.</div></div></div>
-<div class="ralert yellow"><div class="rai">⚠️</div><div><div class="rat">F-Roads — ALL CLOSED until May/June</div><div class="rab">None on your route. Do not attempt under any circumstances.</div></div></div>
-<div class="ralert yellow"><div class="rai">🌬️</div><div><div class="rat">Wind — check daily</div><div class="rab">Campervans are wind-sensitive. Snæfellsnes and north coasts can have violent gusts. Check safetravel.is every morning.</div></div></div>
-<div class="sh" style="margin-top:4px">YOUR DAILY SEGMENTS</div>`;
-  Object.entries(SEGS).forEach(([k,seg])=>{
-    const site=SITES.find(s=>s.seg===k);if(!site)return;
-    const el=document.createElement('div');el.className='seg';
-    el.innerHTML=`<div class="segrow"><div class="sname"><div class="sn1">${seg.name}</div><div class="sn2">${site.date} · ${seg.note}</div></div><div class="sbadge ${sclass(seg.status)}">${slabel(seg.status)}</div></div>`;
-    c.appendChild(el);
-  });
-  const lh=document.createElement('div');lh.innerHTML='<div class="sh" style="margin-top:4px">CHECK EVERY MORNING</div>';c.appendChild(lh);
-  const ld=document.createElement('div');ld.className='elinks';
-  [{i:'🗺',t:'road.is',s:'Official road closures (Vegagerðin)',u:'https://www.road.is'},{i:'⛅',t:'vedur.is',s:'Icelandic Met Office forecasts',u:'https://en.vedur.is'},{i:'🛟',t:'safetravel.is',s:'Active warnings & alerts',u:'https://safetravel.is/travel-conditions/'},{i:'📱',t:'112 Iceland App',s:'Emergency registration — download now',u:'https://www.safetravel.is/112-iceland-app'}].forEach(l=>{
-    const a=document.createElement('a');a.className='elink';a.href=l.u;a.target='_blank';a.rel='noopener';
-    a.innerHTML=`<div class="eli">${l.i}</div><div class="elt"><div class="elt1">${l.t}</div><div class="elt2">${l.s}</div></div><div class="ela">›</div>`;
-    ld.appendChild(a);
-  });
-  c.appendChild(ld);
-}
+function buildRoads_unused(){}
 
 document.querySelectorAll('.tab').forEach(t=>{
   t.addEventListener('click',()=>{
@@ -536,17 +524,6 @@ function buildRoads(){
   </div>`;
   c.appendChild(frEl);
 
-  // Key routes
-  const shEl=document.createElement('div');shEl.innerHTML=`<div class="sh" style="margin-top:4px">KEY ROUTES</div>`;c.appendChild(shEl);
-  const routes=data?.routes||[];
-  routes.forEach(route=>{
-    const el=document.createElement('div');el.className='route-row';
-    const sev=route.severity||'check';
-    const badge2=sev==='open'?`<span class="sbadge so">✓ OPEN</span>`:sev==='closed'?`<span class="sbadge" style="background:#1a0808;color:var(--red)">⛔ CLOSED</span>`:`<span class="sbadge sc">🔍 CHECK</span>`;
-    el.innerHTML=`<div style="flex:1"><div class="route-name">${route.name}</div><div class="route-cond">${route.conditions||route.note||'–'}</div></div>${badge2}`;
-    c.appendChild(el);
-  });
-
   // Links
   const lh=document.createElement('div');lh.innerHTML='<div class="sh" style="margin-top:4px">CHECK EVERY MORNING</div>';c.appendChild(lh);
   const ld=document.createElement('div');ld.className='elinks';
@@ -610,17 +587,21 @@ function buildWeatherTab(){
     }
   }
 
-  // 7-day forecast per campsite (existing functionality)
-  const sh2=document.createElement('div');sh2.className='sh';sh2.style.paddingTop='14px';sh2.textContent='7-DAY FORECAST PER CAMPSITE';c.appendChild(sh2);
+  // 7-day forecast per campsite location
+  const sh2=document.createElement('div');sh2.className='sh';sh2.style.paddingTop='14px';
+  sh2.innerHTML='9-DAY FORECAST BY LOCATION <span style="font-size:9px;font-weight:400;color:var(--muted)">· max°/min° · wind m/s · source: Open-Meteo</span>';
+  c.appendChild(sh2);
+  const seen=new Set();
   SITES.forEach(site=>{
+    if(seen.has(site.id))return;seen.add(site.id);
     const d=wx[site.id];if(!d)return;
     const days=d.time.slice(0,9).map((dt,i)=>{
       const dow=new Date(dt+'T12:00').toLocaleDateString('en-US',{weekday:'short'}).slice(0,3).toUpperCase();
-      const isc=dt===site.dstr;
-      return`<div class="fday${isc?' camp':''}"><div class="fdow">${isc?'CAMP':dt===today()?'TODAY':dow}</div><div class="fic">${WXI[d.weathercode[i]]||'❓'}</div><div class="fhi">${Math.round(d.temperature_2m_max[i])}°</div><div class="flo">${Math.round(d.temperature_2m_min[i])}°</div><div class="fwd">${Math.round(d.windspeed_10m_max[i])}m/s</div></div>`;
+      const isToday2=dt===today();
+      return`<div class="fday${isToday2?' camp':''}"><div class="fdow">${isToday2?'TODAY':dow}</div><div class="fic">${WXI[d.weathercode[i]]||'❓'}</div><div class="fhi">${Math.round(d.temperature_2m_max[i])}°</div><div class="flo">${Math.round(d.temperature_2m_min[i])}°</div><div class="fwd">${Math.round(d.windspeed_10m_max[i])}m/s</div></div>`;
     }).join('');
     const el=document.createElement('div');el.className='wloc';
-    el.innerHTML=`<div class="wlh"><div><div class="wln">${site.name}</div><div class="wlr">${site.region}</div></div><div class="wlni">Night ${site.n}</div></div><div class="fscroll">${days}</div>`;
+    el.innerHTML=`<div class="wlh"><div><div class="wln">${site.name}</div><div class="wlr">${site.region}</div></div></div><div class="fscroll">${days}</div>`;
     c.appendChild(el);
   });
 }
