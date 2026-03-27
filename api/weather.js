@@ -115,9 +115,9 @@ export default async function handler(req) {
       const dirDeg = dirRaw && dirRaw !== 'N/A' ? parseFloat(dirRaw) : null;
       const temp = tempRaw && tempRaw !== 'N/A' ? parseFloat(tempRaw) : null;
 
-      // Debug: capture raw tag names from this block (first station only, remove later)
+      // Debug: capture raw XML of first station block
       const rawTags = stationMatches.indexOf(match) === 0
-        ? [...block.matchAll(/<([A-Za-z0-9_]+)[^>]*>/g)].map(m=>m[1]).filter((v,i,a)=>a.indexOf(v)===i).join(',')
+        ? block.substring(0, 400).replace(/\s+/g,' ')
         : undefined;
 
       // Find matching station metadata
