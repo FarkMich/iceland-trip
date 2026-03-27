@@ -6,7 +6,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0d1b2a">
-<title>🧊 Iceland Trip</title>
+<title>🧊 Iceland Travel Map</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="description" content="Live Iceland travel map — roads, wind, campsites, waterfalls and attractions for your Ring Road adventure.">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap">
@@ -40,7 +42,38 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .map-toggle.on{color:var(--text);border-color:rgba(56,189,248,.5)}
 .map-toggle .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;opacity:.5;transition:opacity .2s}
 .map-toggle.on .dot{opacity:1}
-.dot-camp{background:var(--accent)}.dot-attr{background:var(--amber)}
+.dot-camp{background:var(--accent)}.dot-attr{background:var(--amber)}.dot-wind{background:#a78bfa}.dot-roads{background:var(--green)}
+/* Wind banner */
+.wind-banner{margin:8px 12px 0;border-radius:var(--r);padding:10px 14px;display:flex;align-items:center;gap:10px;border:1px solid}
+.wind-banner.ok{background:#081a10;border-color:var(--green);color:var(--green)}
+.wind-banner.caution{background:#1a180a;border-color:var(--yellow);color:var(--yellow)}
+.wind-banner.warning{background:#1a100a;border-color:var(--amber);color:var(--amber)}
+.wind-banner.danger{background:#1a0808;border-color:var(--red);color:var(--red)}
+.wind-banner.unknown{background:var(--bg3);border-color:var(--border);color:var(--muted)}
+.wb-icon{font-size:20px;flex-shrink:0}
+.wb-text{flex:1}.wb-title{font-size:12px;font-weight:600}.wb-sub{font-size:10px;font-family:var(--mono);opacity:.8;margin-top:1px}
+.wb-time{font-size:9px;font-family:var(--mono);opacity:.5;margin-left:auto;white-space:nowrap}
+/* Wind station cards */
+.wstation{margin:0 12px 8px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;display:flex;align-items:center;gap:12px}
+.ws-region{font-size:9px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.ws-name{font-size:13px;font-weight:600;margin:2px 0}
+.ws-wind{text-align:right;flex-shrink:0}
+.ws-speed{font-size:18px;font-weight:700;font-family:var(--mono)}
+.ws-dir{font-size:10px;font-family:var(--mono);color:var(--muted)}
+.ws-label{font-size:9px;font-family:var(--mono);margin-top:2px}
+.ws-ok{color:var(--green)}.ws-caution{color:var(--yellow)}.ws-warning{color:var(--amber)}.ws-danger{color:var(--red)}.ws-unknown{color:var(--muted)}
+.ws-camper{display:inline-block;font-size:9px;font-family:var(--mono);background:#1a100a;color:var(--amber);border:1px solid #3a2010;border-radius:6px;padding:1px 6px;margin-top:3px}
+/* Live roads */
+.roads-live-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-family:var(--mono);color:var(--green);margin:0 12px 8px}
+.roads-live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:lp 2s infinite;flex-shrink:0}
+.route-row{margin:0 12px 8px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;display:flex;align-items:center;gap:10px}
+.route-name{flex:1;font-size:13px;font-weight:600}.route-cond{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+/* Closures */
+.closure-item{margin:0 12px 6px;background:#1a0808;border:1px solid #3a1010;border-radius:var(--r);padding:10px 14px}
+.closure-road{font-size:12px;font-weight:600;color:var(--red);margin-bottom:3px}
+.closure-detail{font-size:11px;color:var(--muted);font-family:var(--mono)}
+/* Fallback notice */
+.data-fallback{margin:0 12px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;font-size:11px;color:var(--muted);font-family:var(--mono);text-align:center}
 .leaflet-popup-content-wrapper{background:var(--bg2)!important;color:var(--text)!important;border:1px solid var(--border)!important;border-radius:14px!important;box-shadow:0 8px 32px rgba(0,0,0,.7)!important}
 .leaflet-popup-tip{background:var(--bg2)!important}
 .leaflet-popup-content{margin:12px 14px!important;font-family:var(--font)!important;min-width:190px}
@@ -128,18 +161,18 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 
 <div id="loading">
   <div class="ll">🧊</div>
-  <div class="lt">Iceland Trip</div>
-  <div class="ls">Mar 24 – Apr 1 · Ring Road</div>
+  <div class="lt">Iceland Travel Map</div>
+  <div class="ls">Ring Road · Live Roads &amp; Weather</div>
   <div class="lb"><div class="lf" id="lf"></div></div>
-  <div class="ls" id="lstatus">Fetching live weather…</div>
+  <div class="ls" id="lstatus">Loading live data…</div>
 </div>
 
 <div id="app" style="display:none">
   <div id="topbar">
     <div class="ti">🧊</div>
-    <div class="tt"><h1>Iceland Camper</h1><p>Mar 24 – Apr 1 · Clockwise Ring Road</p></div>
+    <div class="tt"><h1>Iceland Travel Map</h1><p id="topbar-sub">Ring Road · Live Data</p></div>
     <div class="sp"></div>
-    <div class="ld"></div>&nbsp;<div class="lv">LIVE WX</div>
+    <div class="ld" id="live-dot"></div>&nbsp;<div class="lv" id="live-label">LIVE</div>
   </div>
   <div id="tabs">
     <div class="tab active" data-p="mp"><span class="ti2">🗺</span>MAP</div>
@@ -157,6 +190,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
         </div>
         <div class="map-toggle on" id="tog-attr" onclick="toggleLayer('attr')">
           <div class="dot dot-attr"></div>Attractions
+        </div>
+        <div class="map-toggle" id="tog-wind" onclick="toggleLayer('wind')">
+          <div class="dot dot-wind"></div>Wind
         </div>
       </div>
     </div>
@@ -215,7 +251,8 @@ const WXI={0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',48:'🌫',51:'🌦',
 
 const ATTR_COLORS={waterfall:'#3b82f6',glacier:'#93c5fd',beach:'#fbbf24',geo:'#f97316',lagoon:'#2dd4bf',historic:'#a78bfa',hike:'#4ade80',nature:'#86efac'};
 
-let wx={},mapInst,campGroup,attrGroup,layerState={camp:true,attr:true};
+let wx={},mapInst,campGroup,attrGroup,windGroup,layerState={camp:true,attr:true,wind:false};
+let liveRoads=null,liveWind=null;
 
 function today(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function isToday(s){return s.dstr===today()}
@@ -275,7 +312,11 @@ function toggleLayer(w){
   layerState[w]=!layerState[w];
   document.getElementById('tog-'+w).classList.toggle('on',layerState[w]);
   if(w==='camp'){layerState.camp?campGroup.addTo(mapInst):mapInst.removeLayer(campGroup);}
-  else{layerState.attr?attrGroup.addTo(mapInst):mapInst.removeLayer(attrGroup);}
+  else if(w==='attr'){layerState.attr?attrGroup.addTo(mapInst):mapInst.removeLayer(attrGroup);}
+  else if(w==='wind'){
+    if(layerState.wind){if(windGroup)windGroup.addTo(mapInst);}
+    else{if(windGroup)mapInst.removeLayer(windGroup);}
+  }
 }
 
 function buildRoute(){
@@ -365,15 +406,237 @@ document.querySelectorAll('.tab').forEach(t=>{
   });
 });
 
+// ── Live API fetchers ──────────────────────────────────────────────
+
+async function fetchLiveRoads(){
+  try{
+    const r=await fetch('/api/roads',{signal:AbortSignal.timeout(10000)});
+    if(!r.ok)throw new Error('roads api error');
+    liveRoads=await r.json();
+  }catch(e){
+    liveRoads={ok:false,fallback:true,routes:[],activeClosures:[],fRoads:{open:false,label:'Check road.is',severity:'check'}};
+  }
+}
+
+async function fetchLiveWind(){
+  try{
+    const r=await fetch('/api/weather',{signal:AbortSignal.timeout(10000)});
+    if(!r.ok)throw new Error('weather api error');
+    liveWind=await r.json();
+  }catch(e){
+    liveWind={ok:false,fallback:true,stations:[],alert:{level:'unknown',campervanWarning:false,warningAreas:[],message:'Check vedur.is for conditions.'}};
+  }
+}
+
+// ── Wind map layer ─────────────────────────────────────────────────
+
+function buildWindLayer(){
+  if(!mapInst||!liveWind||!liveWind.stations)return;
+  if(windGroup)mapInst.removeLayer(windGroup);
+  windGroup=L.layerGroup();
+
+  const SEV_COLORS={ok:'#22c55e',caution:'#f59e0b',warning:'#f97316',danger:'#ef4444',unknown:'#557a99'};
+
+  liveWind.stations.forEach(st=>{
+    if(!st.lat||!st.lon)return;
+    const sev=st.wind.severity||'unknown';
+    const col=SEV_COLORS[sev]||'#557a99';
+    const ms=st.wind.speedMs!==null?st.wind.speedMs.toFixed(1):'?';
+    const dir=st.wind.directionLabel||'–';
+
+    // Arrow icon showing wind direction
+    const arrowDeg=(st.wind.directionDeg||0)+180; // arrow points where wind goes TO
+    const icon=L.divIcon({
+      html:`<div style="width:36px;height:36px;border-radius:50%;background:${col}22;border:2px solid ${col}99;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-family:var(--mono)">
+        <div style="font-size:9px;font-weight:700;color:${col};line-height:1">${ms}</div>
+        <div style="font-size:7px;color:${col};opacity:.8">m/s</div>
+        <div style="font-size:8px;color:${col};opacity:.7">${dir}</div>
+      </div>`,
+      iconSize:[36,36],iconAnchor:[18,18],className:''
+    });
+
+    const m=L.marker([st.lat,st.lon],{icon}).addTo(windGroup);
+    m.on('click',()=>{
+      const warn=st.wind.campervanWarning?'<div style="font-size:10px;background:#1a100a;color:var(--amber);border:1px solid #3a2010;border-radius:6px;padding:2px 8px;margin-top:6px;font-family:var(--mono)">⚠ Campervan caution</div>':'';
+      m.bindPopup(`
+        <div class="pn">${st.name}</div>
+        <div class="pm">${st.region}</div>
+        <div style="font-size:13px;margin:6px 0;font-family:var(--mono)">
+          💨 ${ms} m/s ${dir}${st.wind.gustMs?` · gust ${st.wind.gustMs.toFixed(1)}`:''}<br>
+          <span style="color:${col};font-size:11px">${st.wind.label||''}</span>
+        </div>
+        ${st.temperature!==null?`<div style="font-size:12px;color:var(--muted)">🌡 ${st.temperature}°C</div>`:''}
+        ${warn}
+        <div style="font-size:9px;color:var(--muted);font-family:var(--mono);margin-top:6px">vedur.is · ${st.observedAt||'recent'}</div>
+      `,{maxWidth:230}).openPopup();
+    });
+  });
+
+  if(layerState.wind)windGroup.addTo(mapInst);
+}
+
+// ── Updated buildRoads with live data ──────────────────────────────
+
+function buildRoads(){
+  const c=document.getElementById('rcontent');
+  c.innerHTML='';
+
+  const data=liveRoads;
+  const isLive=data&&data.ok&&!data.fallback;
+
+  // Live/fallback badge
+  const badge=document.createElement('div');
+  if(isLive){
+    const t=data.fetchedAt?new Date(data.fetchedAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'';
+    badge.innerHTML=`<div class="roads-live-badge"><div class="roads-live-dot"></div>LIVE · road.is · updated ${t}</div>`;
+  }else{
+    badge.innerHTML=`<div class="data-fallback">⚠ Live road data unavailable — <a href="https://www.road.is" target="_blank" rel="noopener" style="color:var(--accent)">check road.is directly</a></div>`;
+  }
+  c.appendChild(badge);
+
+  // F-roads status
+  const fr=data?.fRoads||{severity:'check',label:'Check road.is'};
+  const frEl=document.createElement('div');
+  frEl.innerHTML=`<div class="sh" style="padding-top:10px">F-ROADS STATUS</div>
+  <div class="ralert ${fr.severity==='open'?'green':'yellow'}">
+    <div class="rai">${fr.severity==='open'?'✅':'⛔'}</div>
+    <div><div class="rat">Highland F-Roads</div><div class="rab">${fr.label} — Never attempt F-roads without checking road.is and a proper 4WD.</div></div>
+  </div>`;
+  c.appendChild(frEl);
+
+  // Active closures
+  if(data?.activeClosures?.length>0){
+    const clEl=document.createElement('div');
+    clEl.innerHTML=`<div class="sh" style="margin-top:4px">ACTIVE CLOSURES</div>`;
+    c.appendChild(clEl);
+    data.activeClosures.forEach(cl=>{
+      const el=document.createElement('div');
+      el.className='closure-item';
+      el.innerHTML=`<div class="closure-road">⛔ Route ${cl.road}</div><div class="closure-detail">${cl.reason||''} ${cl.from?`· ${cl.from}`:''} ${cl.to?`→ ${cl.to}`:''}</div>`;
+      c.appendChild(el);
+    });
+  }
+
+  // Route summaries
+  const shEl=document.createElement('div');
+  shEl.innerHTML=`<div class="sh" style="margin-top:4px">KEY ROUTES</div>`;
+  c.appendChild(shEl);
+
+  if(isLive&&data.routes.length>0){
+    data.routes.forEach(route=>{
+      const el=document.createElement('div');
+      el.className='route-row';
+      const sev=route.severity||'check';
+      const badge2=sev==='open'?`<span class="sbadge so">✓ OPEN</span>`:sev==='closed'?`<span class="sbadge" style="background:#1a0808;color:var(--red)">⛔ CLOSED</span>`:`<span class="sbadge sc">⚠ ${route.severity.toUpperCase()}</span>`;
+      el.innerHTML=`<div style="flex:1"><div class="route-name">${route.name}</div><div class="route-cond">${route.conditions||'–'}</div></div>${badge2}`;
+      c.appendChild(el);
+    });
+  }else{
+    // Static fallback for key routes when API unavailable
+    [{name:'Ring Road (Route 1)',note:'Paved. Ice possible at elevation.',status:'open'},
+     {name:'F-Roads',note:'All closed until summer.',status:'caution'},
+     {name:'Snæfellsnes (Rt 54)',note:'Can be icy near glacier.',status:'caution'},
+     {name:'Dettifoss (Rt 862)',note:'Verify on road.is.',status:'check'}
+    ].forEach(seg=>{
+      const el=document.createElement('div');el.className='route-row';
+      el.innerHTML=`<div style="flex:1"><div class="route-name">${seg.name}</div><div class="route-cond">${seg.note}</div></div><div class="sbadge ${sclass(seg.status)}">${slabel(seg.status)}</div>`;
+      c.appendChild(el);
+    });
+  }
+
+  // Links section
+  const lh=document.createElement('div');lh.innerHTML='<div class="sh" style="margin-top:4px">CHECK EVERY MORNING</div>';c.appendChild(lh);
+  const ld=document.createElement('div');ld.className='elinks';
+  [{i:'🗺',t:'road.is',s:'Official road closures (Vegagerðin)',u:'https://www.road.is'},
+   {i:'⛅',t:'vedur.is',s:'Icelandic Met Office — wind & forecasts',u:'https://en.vedur.is'},
+   {i:'🛟',t:'safetravel.is',s:'Active warnings & alerts',u:'https://safetravel.is/travel-conditions/'},
+   {i:'📱',t:'112 Iceland App',s:'Emergency registration — download now',u:'https://www.safetravel.is/112-iceland-app'}
+  ].forEach(l=>{
+    const a=document.createElement('a');a.className='elink';a.href=l.u;a.target='_blank';a.rel='noopener';
+    a.innerHTML=`<div class="eli">${l.i}</div><div class="elt"><div class="elt1">${l.t}</div><div class="elt2">${l.s}</div></div><div class="ela">›</div>`;
+    ld.appendChild(a);
+  });
+  c.appendChild(ld);
+}
+
+// ── Updated buildWeather with live wind banner ─────────────────────
+
+function buildWeatherTab(){
+  const c=document.getElementById('wlist');c.innerHTML='';
+
+  // Wind alert banner at top
+  if(liveWind){
+    const al=liveWind.alert||{};
+    const sev=al.level||'unknown';
+    const sevIcon={ok:'🌬',caution:'💨',warning:'⚠️',danger:'🚨',unknown:'❓'}[sev]||'❓';
+    const banner=document.createElement('div');
+    const t=liveWind.fetchedAt?new Date(liveWind.fetchedAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'';
+    banner.innerHTML=`<div class="wind-banner ${sev}">
+      <div class="wb-icon">${sevIcon}</div>
+      <div class="wb-text">
+        <div class="wb-title">${al.campervanWarning?'Campervan wind warning active':'Wind conditions '+sev}</div>
+        <div class="wb-sub">${al.message||''}</div>
+      </div>
+      ${t?`<div class="wb-time">vedur.is<br>${t}</div>`:''}
+    </div>`;
+    c.appendChild(banner);
+
+    // Wind stations
+    if(liveWind.stations&&liveWind.stations.length>0){
+      const sh=document.createElement('div');sh.className='sh';sh.style.paddingTop='12px';sh.textContent='WIND STATIONS';c.appendChild(sh);
+      const SEV_CLASS={ok:'ws-ok',caution:'ws-caution',warning:'ws-warning',danger:'ws-danger',unknown:'ws-unknown'};
+      liveWind.stations.forEach(st=>{
+        if(st.wind.speedMs===null&&st.temperature===null)return;
+        const el=document.createElement('div');el.className='wstation';
+        const sc2=SEV_CLASS[st.wind.severity]||'ws-unknown';
+        const ms=st.wind.speedMs!==null?st.wind.speedMs.toFixed(1):'?';
+        el.innerHTML=`
+          <div style="flex:1">
+            <div class="ws-region">${st.region}</div>
+            <div class="ws-name">${st.name}</div>
+            ${st.temperature!==null?`<div style="font-size:11px;color:var(--muted);font-family:var(--mono)">🌡 ${st.temperature}°C</div>`:''}
+            ${st.wind.campervanWarning?'<div class="ws-camper">⚠ Campervan caution</div>':''}
+          </div>
+          <div class="ws-wind">
+            <div class="ws-speed ${sc2}">${ms}<span style="font-size:10px"> m/s</span></div>
+            <div class="ws-dir">${st.wind.directionLabel||'–'}</div>
+            <div class="ws-label ${sc2}">${st.wind.label||''}</div>
+          </div>`;
+        c.appendChild(el);
+      });
+    }
+  }
+
+  // 7-day forecast per campsite (existing functionality)
+  const sh2=document.createElement('div');sh2.className='sh';sh2.style.paddingTop='14px';sh2.textContent='7-DAY FORECAST PER CAMPSITE';c.appendChild(sh2);
+  SITES.forEach(site=>{
+    const d=wx[site.id];if(!d)return;
+    const days=d.time.slice(0,9).map((dt,i)=>{
+      const dow=new Date(dt+'T12:00').toLocaleDateString('en-US',{weekday:'short'}).slice(0,3).toUpperCase();
+      const isc=dt===site.dstr;
+      return`<div class="fday${isc?' camp':''}"><div class="fdow">${isc?'CAMP':dt===today()?'TODAY':dow}</div><div class="fic">${WXI[d.weathercode[i]]||'❓'}</div><div class="fhi">${Math.round(d.temperature_2m_max[i])}°</div><div class="flo">${Math.round(d.temperature_2m_min[i])}°</div><div class="fwd">${Math.round(d.windspeed_10m_max[i])}m/s</div></div>`;
+    }).join('');
+    const el=document.createElement('div');el.className='wloc';
+    el.innerHTML=`<div class="wlh"><div><div class="wln">${site.name}</div><div class="wlr">${site.region}</div></div><div class="wlni">Night ${site.n}</div></div><div class="fscroll">${days}</div>`;
+    c.appendChild(el);
+  });
+}
+
 async function init(){
   const lf=document.getElementById('lf'),ls=document.getElementById('lstatus');
-  lf.style.width='10%';ls.textContent='Fetching live weather forecasts…';
-  await loadWx(p=>{lf.style.width=p+'%'});
-  lf.style.width='90%';ls.textContent='Building your route…';
+  lf.style.width='5%';ls.textContent='Fetching live weather forecasts…';
+  await loadWx(p=>{lf.style.width=(p*0.6)+'%'});
+  lf.style.width='65%';ls.textContent='Loading road conditions…';
+  await fetchLiveRoads();
+  lf.style.width='80%';ls.textContent='Loading wind data…';
+  await fetchLiveWind();
+  lf.style.width='95%';ls.textContent='Building map…';
   await new Promise(r=>setTimeout(r,150));
   document.getElementById('loading').style.display='none';
   document.getElementById('app').style.display='flex';
-  initMap();buildRoute();buildAttractions();buildWeather();buildRoads();
+  initMap();
+  buildWindLayer();
+  buildRoute();buildAttractions();buildWeatherTab();buildRoads();
 }
 init();
 </script>
