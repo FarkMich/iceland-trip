@@ -47,25 +47,22 @@ export default async function handler(req) {
   }
 
   try {
-    // Vegagerdin (road.is) open data feeds - GeoJSON format
-    // These are the actual machine-readable endpoints
-    const conditionsUrl = 'https://www.vegagerdin.is/vefthjonustur/leid?format=json';
-    const closedRoadsUrl = 'https://www.vegagerdin.is/vefthjonustur/lokunarlisti?format=json';
-
-    // Also try their ATOM/RSS feed for closures
-    const atomUrl = 'https://www.road.is/travel-info/road-closures/?format=atom';
+    // Vegagerdin open data - correct endpoints
+    // Their public API is documented at https://www.vegagerdin.is/upplysingar-og-utgafa/opid-gogn/
+    const conditionsUrl = 'https://www.vegagerdin.is/api/RoadData/GetRoadConditions';
+    const closedRoadsUrl = 'https://www.vegagerdin.is/api/RoadData/GetRoadClosures';
 
     const [condRes, closureRes] = await Promise.allSettled([
       fetch(conditionsUrl, {
         headers: {
-          'Accept': 'application/json, application/geo+json, */*',
+          'Accept': 'application/json',
           'User-Agent': 'Mozilla/5.0 (compatible; IcelandTravelApp/1.0)',
         },
         signal: AbortSignal.timeout(8000)
       }),
       fetch(closedRoadsUrl, {
         headers: {
-          'Accept': 'application/json, application/geo+json, */*',
+          'Accept': 'application/json',
           'User-Agent': 'Mozilla/5.0 (compatible; IcelandTravelApp/1.0)',
         },
         signal: AbortSignal.timeout(8000)
