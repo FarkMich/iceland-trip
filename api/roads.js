@@ -27,30 +27,37 @@ export default async function handler(req) {
   }
 
   try {
-    // safetravel.is WordPress REST API - travel alerts feed
-    const alertsUrl = 'https://safetravel.is/wp-json/wp/v2/posts?per_page=8&_fields=title,excerpt,date,link';
-
-    const res = await fetch(alertsUrl, {
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (compatible; IcelandTravelApp/1.0)',
-      },
-      signal: AbortSignal.timeout(8000)
-    });
+    // safetravel.is - try their alerts endpoint directly
+    // Their site uses custom post types for travel alerts
+    const endpoints = [
+      'https://safetravel.is/wp-json/wp/v2/posts?per_page=8&_fields=title,excerpt,date,link&orderby=date&order=desc',
+      'https://safetravel.is/wp-json/wp/v2/alert?per_page=8&_fields=title,excerpt,date,link',
+    ];
 
     let alerts = [];
-    let debugInfo = { alertsUrl, status: res.status, contentType: res.headers.get('content-type') };
+    let debugInfo = {};
 
-    if (res.ok) {
-      const raw = await res.json().catch(e => { debugInfo.parseError = e.message; return null; });
-      if (Array.isArray(raw)) {
-        alerts = raw.map(post => ({
-          title: post.title?.rendered?.replace(/<[^>]+>/g, '') || '',
-          summary: post.excerpt?.rendered?.replace(/<[^>]+>/g, '').trim().substring(0, 200) || '',
-          date: post.date,
-          url: post.link,
-        }));
-        debugInfo.alertCount = alerts.length;
+    for (const url of endpoints) {
+      const res = await fetch(url, {
+        headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (compatible; IcelandTravelApp/1.0)' },
+        signal: AbortSignal.timeout(8000)
+      }).catch(e => null);
+
+      if (!res) continue;
+      debugInfo[url] = { status: res.status, type: res.headers.get('content-type') };
+
+      if (res.ok) {
+        const raw = await res.json().catch(() => null);
+        if (Array.isArray(raw) && raw.length > 0) {
+          alerts = raw.map(post => ({
+            title: post.title?.rendered?.replace(/<[^>]+>/g, '') || '',
+            summary: post.excerpt?.rendered?.replace(/<[^>]+>/g, '').trim().substring(0, 200) || '',
+            date: post.date,
+            url: post.link,
+          }));
+          debugInfo.usedEndpoint = url;
+          break;
+        }
       }
     }
 
