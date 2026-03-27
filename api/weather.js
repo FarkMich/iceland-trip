@@ -10,7 +10,8 @@ const STATIONS = [
   { id: '1',     name: 'Reykjavík',         lat: 64.13,  lon: -21.90, region: 'Capital' },
   { id: '422',   name: 'Keflavík Airport',  lat: 63.98,  lon: -22.60, region: 'Reykjanes' },
   { id: '1473',  name: 'Selfoss',           lat: 63.93,  lon: -21.00, region: 'South' },
-  { id: '6210',  name: 'Vík',               lat: 63.42,  lon: -19.00, region: 'South Coast' },
+  { id: '6210',  name: 'Vík',               lat: 63.42,  lon: -19.01, region: 'South Coast' },
+  { id: '1393',  name: 'Kirkjubæjarklaustur', lat: 63.78, lon: -18.06, region: 'South Coast' },
   { id: '799',   name: 'Höfn',              lat: 64.25,  lon: -15.20, region: 'East' },
   { id: '3477',  name: 'Egilsstaðir',       lat: 65.28,  lon: -14.40, region: 'East Fjords' },
   { id: '571',   name: 'Akureyri',          lat: 65.68,  lon: -18.10, region: 'North' },
@@ -62,7 +63,6 @@ export default async function handler(req) {
     // obs = current observations, d = daily, lang = en
     const stationIds = STATIONS.map(s => s.id).join(';');
     const vedurUrl = `https://xmlweather.vedur.is/?op_w=xml&type=obs&lang=en&view=xml&ids=${stationIds}&params=T;W;D;P;F;FX;TD`;
-    // Parameters: T=temp, W=wind speed(m/s), D=wind direction, P=pressure, F=wind gust, FX=max gust, TD=dew point
 
     const res = await fetch(vedurUrl, {
       headers: {
