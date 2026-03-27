@@ -1,26 +1,33 @@
 {
-  "name": "Iceland Travel Map",
-  "short_name": "Iceland Map",
-  "description": "Live Iceland travel map — roads, wind, campsites and attractions for your Ring Road adventure.",
+  "name": "Iceland Ring Road",
+  "short_name": "Iceland",
+  "description": "Live campsites, weather & road alerts for Ring Road trip",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0d1b2a",
-  "theme_color": "#0d1b2a",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "icons/icon-192.png",
+      "src": "/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "icons/icon-512.png",
+      "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
   ],
   "categories": ["travel", "navigation"],
-  "lang": "en"
+  "screenshots": [
+    {
+      "src": "/screenshots/map.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "label": "Map with live wind data"
+    }
+  ]
 }
