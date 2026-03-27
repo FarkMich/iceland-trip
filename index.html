@@ -484,72 +484,67 @@ function buildRoads(){
   const data=liveRoads;
   const isLive=data&&data.ok&&!data.fallback;
 
-  // Live/fallback badge
+  // Live badge
   const badge=document.createElement('div');
   if(isLive){
     const t=data.fetchedAt?new Date(data.fetchedAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'';
-    badge.innerHTML=`<div class="roads-live-badge"><div class="roads-live-dot"></div>LIVE · road.is · updated ${t}</div>`;
+    badge.innerHTML=`<div class="roads-live-badge"><div class="roads-live-dot"></div>LIVE · safetravel.is · updated ${t}</div>`;
   }else{
-    badge.innerHTML=`<div class="data-fallback">⚠ Live road data unavailable — <a href="https://www.road.is" target="_blank" rel="noopener" style="color:var(--accent)">check road.is directly</a></div>`;
+    badge.innerHTML=`<div class="data-fallback">⚠ Live road data unavailable — <a href="https://safetravel.is" target="_blank" rel="noopener" style="color:var(--accent)">check safetravel.is directly</a></div>`;
   }
   c.appendChild(badge);
+
+  // Active alerts from safetravel.is
+  if(data?.alerts?.length>0){
+    const sh=document.createElement('div');sh.className='sh';sh.style.paddingTop='10px';sh.textContent='ACTIVE ALERTS';c.appendChild(sh);
+    data.alerts.forEach(alert=>{
+      const el=document.createElement('div');
+      // Determine severity from title/summary text
+      const txt=(alert.title+' '+alert.summary).toLowerCase();
+      const isClosed=txt.includes('clos');
+      const isDanger=txt.includes('blizzard')||txt.includes('avalanche')||txt.includes('danger');
+      const isWarn=txt.includes('strong wind')||txt.includes('warning')||txt.includes('difficult');
+      const alertClass=isClosed||isDanger?'yellow':isWarn?'yellow':'green';
+      const alertIcon=isClosed?'⛔':isDanger?'🚨':isWarn?'⚠️':'ℹ️';
+      el.innerHTML=`<div class="ralert ${alertClass}" style="margin-bottom:8px">
+        <div class="rai">${alertIcon}</div>
+        <div>
+          <div class="rat">${alert.title}</div>
+          <div class="rab">${alert.summary}</div>
+          ${alert.url?`<a href="${alert.url}" target="_blank" rel="noopener" style="font-size:10px;color:var(--accent);font-family:var(--mono);margin-top:4px;display:inline-block">Read more →</a>`:''}
+        </div>
+      </div>`;
+      c.appendChild(el);
+    });
+  }
 
   // F-roads status
   const fr=data?.fRoads||{severity:'check',label:'Check road.is'};
   const frEl=document.createElement('div');
-  frEl.innerHTML=`<div class="sh" style="padding-top:10px">F-ROADS STATUS</div>
+  frEl.innerHTML=`<div class="sh" style="padding-top:6px">F-ROADS STATUS</div>
   <div class="ralert ${fr.severity==='open'?'green':'yellow'}">
     <div class="rai">${fr.severity==='open'?'✅':'⛔'}</div>
-    <div><div class="rat">Highland F-Roads</div><div class="rab">${fr.label} — Never attempt F-roads without checking road.is and a proper 4WD.</div></div>
+    <div><div class="rat">Highland F-Roads</div><div class="rab">${fr.label} — Never attempt F-roads without a proper 4WD and checking road.is.</div></div>
   </div>`;
   c.appendChild(frEl);
 
-  // Active closures
-  if(data?.activeClosures?.length>0){
-    const clEl=document.createElement('div');
-    clEl.innerHTML=`<div class="sh" style="margin-top:4px">ACTIVE CLOSURES</div>`;
-    c.appendChild(clEl);
-    data.activeClosures.forEach(cl=>{
-      const el=document.createElement('div');
-      el.className='closure-item';
-      el.innerHTML=`<div class="closure-road">⛔ Route ${cl.road}</div><div class="closure-detail">${cl.reason||''} ${cl.from?`· ${cl.from}`:''} ${cl.to?`→ ${cl.to}`:''}</div>`;
-      c.appendChild(el);
-    });
-  }
+  // Key routes
+  const shEl=document.createElement('div');shEl.innerHTML=`<div class="sh" style="margin-top:4px">KEY ROUTES</div>`;c.appendChild(shEl);
+  const routes=data?.routes||[];
+  routes.forEach(route=>{
+    const el=document.createElement('div');el.className='route-row';
+    const sev=route.severity||'check';
+    const badge2=sev==='open'?`<span class="sbadge so">✓ OPEN</span>`:sev==='closed'?`<span class="sbadge" style="background:#1a0808;color:var(--red)">⛔ CLOSED</span>`:`<span class="sbadge sc">🔍 CHECK</span>`;
+    el.innerHTML=`<div style="flex:1"><div class="route-name">${route.name}</div><div class="route-cond">${route.conditions||route.note||'–'}</div></div>${badge2}`;
+    c.appendChild(el);
+  });
 
-  // Route summaries
-  const shEl=document.createElement('div');
-  shEl.innerHTML=`<div class="sh" style="margin-top:4px">KEY ROUTES</div>`;
-  c.appendChild(shEl);
-
-  if(isLive&&data.routes.length>0){
-    data.routes.forEach(route=>{
-      const el=document.createElement('div');
-      el.className='route-row';
-      const sev=route.severity||'check';
-      const badge2=sev==='open'?`<span class="sbadge so">✓ OPEN</span>`:sev==='closed'?`<span class="sbadge" style="background:#1a0808;color:var(--red)">⛔ CLOSED</span>`:`<span class="sbadge sc">⚠ ${route.severity.toUpperCase()}</span>`;
-      el.innerHTML=`<div style="flex:1"><div class="route-name">${route.name}</div><div class="route-cond">${route.conditions||'–'}</div></div>${badge2}`;
-      c.appendChild(el);
-    });
-  }else{
-    // Static fallback for key routes when API unavailable
-    [{name:'Ring Road (Route 1)',note:'Paved. Ice possible at elevation.',status:'open'},
-     {name:'F-Roads',note:'All closed until summer.',status:'caution'},
-     {name:'Snæfellsnes (Rt 54)',note:'Can be icy near glacier.',status:'caution'},
-     {name:'Dettifoss (Rt 862)',note:'Verify on road.is.',status:'check'}
-    ].forEach(seg=>{
-      const el=document.createElement('div');el.className='route-row';
-      el.innerHTML=`<div style="flex:1"><div class="route-name">${seg.name}</div><div class="route-cond">${seg.note}</div></div><div class="sbadge ${sclass(seg.status)}">${slabel(seg.status)}</div>`;
-      c.appendChild(el);
-    });
-  }
-
-  // Links section
+  // Links
   const lh=document.createElement('div');lh.innerHTML='<div class="sh" style="margin-top:4px">CHECK EVERY MORNING</div>';c.appendChild(lh);
   const ld=document.createElement('div');ld.className='elinks';
-  [{i:'🗺',t:'road.is',s:'Official road closures (Vegagerðin)',u:'https://www.road.is'},
+  [{i:'🛟',t:'safetravel.is',s:'Active alerts & travel warnings',u:'https://safetravel.is/travel-conditions/'},
+   {i:'🗺',t:'road.is',s:'Official road closures (Vegagerðin)',u:'https://www.road.is'},
    {i:'⛅',t:'vedur.is',s:'Icelandic Met Office — wind & forecasts',u:'https://en.vedur.is'},
-   {i:'🛟',t:'safetravel.is',s:'Active warnings & alerts',u:'https://safetravel.is/travel-conditions/'},
    {i:'📱',t:'112 Iceland App',s:'Emergency registration — download now',u:'https://www.safetravel.is/112-iceland-app'}
   ].forEach(l=>{
     const a=document.createElement('a');a.className='elink';a.href=l.u;a.target='_blank';a.rel='noopener';
