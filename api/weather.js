@@ -83,14 +83,15 @@ export default async function handler(req) {
     const observations = stationMatches.map(match => {
       const block = match[1];
 
+      // vedur.is XML uses BOTH formats: <W value="10.5"/> AND <W>10.5</W>
+      // Must handle both patterns
       const getId = (tag) => {
-        const m = block.match(new RegExp(`<${tag}[^>]*>([^<]*)<\/${tag}>`));
-        return m ? m[1].trim() : null;
-      };
-
-      const getAttr = (tag, attr) => {
-        const m = block.match(new RegExp(`<${tag}[^>]*${attr}="([^"]*)"[^>]*>`));
-        return m ? m[1].trim() : null;
+        // Try value attribute first: <TAG value="X"/>
+        const attrMatch = block.match(new RegExp(`<${tag}[^>]*\\bvalue="([^"]*)"[^>]*>`));
+        if (attrMatch) return attrMatch[1].trim();
+        // Fall back to element content: <TAG>X</TAG>
+        const elemMatch = block.match(new RegExp(`<${tag}[^>]*>([^<]*)<\/${tag}>`));
+        return elemMatch ? elemMatch[1].trim() : null;
       };
 
       // Station ID from parent tag attributes
