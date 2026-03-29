@@ -435,6 +435,7 @@ function switchTab(id,btn){
   btn.classList.add('active');
   if(id==='map')setTimeout(()=>map&&map.invalidateSize(),100);
   if(id==='weather')setTimeout(()=>windMap&&windMap.invalidateSize(),150);
+  if(id==='roads'&&!allRoadSegments.length)fetchRoads();
 }
 
 /* ================================================================ MAIN MAP */
@@ -835,6 +836,8 @@ function windClass(ms){return ms<8?'wind-calm':ms<14?'wind-mod':ms<20?'wind-stro
 let allRoadSegments = [];
 let roadsFilter = 'all';
 
+const ROAD_GQL = 'https://umferdin.is/graphql?operationName=RoadCondition&variables=%7B%22testdata%22%3Afalse%2C%22lang%22%3A%22EN%22%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%221c9bbebf0182c4535b4afba0fc7e58045dd764c5a1e93c5f84aa5b0d7b8a02eb%22%7D%7D';
+
 const CAT_LABEL = {
   'A':'Easily passable','B':'Spots of ice','C':'Slippery','D':'Extremely slippery',
   'E':'Wet snow','F':'Snow','G':'Difficult driving','H':'Difficult road conditions',
@@ -850,7 +853,10 @@ const CAT_ICON = {
 
 async function fetchRoads(){
   try{
-    const res = await fetch('/api/road-conditions');
+    // Call umferdin.is GraphQL directly — works from browser, no proxy needed
+    const res = await fetch(ROAD_GQL, {
+      headers: { 'Accept': 'application/json' }
+    });
     if(!res.ok) throw new Error('HTTP '+res.status);
     const json = await res.json();
     const data = json?.data?.RoadCondition;
@@ -858,7 +864,6 @@ async function fetchRoads(){
 
     allRoadSegments = data.results;
 
-    // Update timestamp
     const updated = new Date(data.lastUpdate);
     document.getElementById('roads-updated').textContent =
       'Updated ' + updated.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
