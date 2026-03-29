@@ -56,7 +56,9 @@
     .layer-btn{padding:7px 12px;border-radius:20px;background:var(--surface);border:1px solid var(--border);
       font-size:11px;font-weight:700;color:var(--text-dim);box-shadow:0 3px 10px rgba(0,0,0,.5);transition:all .15s}
     .layer-btn.on{background:var(--ice-dim);border-color:var(--ice);color:var(--ice)}
+    .layer-btn.on.green{background:rgba(63,185,80,.15);border-color:var(--green);color:var(--green)}
     .layer-btn.on.lava{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    .layer-btn.on.yellow{background:rgba(210,153,34,.15);border-color:var(--yellow);color:var(--yellow)}
 
     /* FABs */
     .map-fabs{position:absolute;right:14px;top:14px;z-index:900;display:flex;flex-direction:column;gap:8px}
@@ -222,11 +224,11 @@
 
       <!-- Layer toggles -->
       <div class="map-layers">
-        <button class="layer-btn on lava" id="btn-camps"   onclick="toggleLayer('camps')">⛺ Camps</button>
-        <button class="layer-btn on"      id="btn-sights"  onclick="toggleLayer('sights')">✦ Sights</button>
-        <button class="layer-btn on"      id="btn-wind"    onclick="toggleLayer('wind')">💨 Wind</button>
-        <button class="layer-btn"         id="btn-petrol"  onclick="toggleLayer('petrol')">⛽ Fuel</button>
-        <button class="layer-btn"         id="btn-grocery" onclick="toggleLayer('grocery')">🛒 Stores</button>
+        <button class="layer-btn on green" id="btn-camps"   onclick="toggleLayer('camps')">⛺ Camps</button>
+        <button class="layer-btn on"       id="btn-sights"  onclick="toggleLayer('sights')">✦ Sights</button>
+        <button class="layer-btn on"       id="btn-wind"    onclick="toggleLayer('wind')">💨 Wind</button>
+        <button class="layer-btn"          id="btn-petrol"  onclick="toggleLayer('petrol')">⛽ Fuel</button>
+        <button class="layer-btn"          id="btn-grocery" onclick="toggleLayer('grocery')">🛒 Stores</button>
       </div>
 
       <!-- FABs -->
@@ -620,8 +622,14 @@ function toggleLayer(name){
   btn.classList.toggle('on',layers[name]);
   if(name==='camps'||name==='sights')refreshMapMarkers();
   if(name==='wind')windMarkers.forEach(m=>layers.wind?m.addTo(map):map.removeLayer(m));
-  if(name==='petrol'){layers.petrol?fetchPetrol():petrolMarkers.forEach(m=>map.removeLayer(m));}
-  if(name==='grocery'){layers.grocery?fetchGrocery():groceryMarkers.forEach(m=>map.removeLayer(m));}
+  if(name==='petrol'){
+    btn.classList.toggle('lava',layers[name]);
+    layers.petrol?fetchPetrol():petrolMarkers.forEach(m=>map.removeLayer(m));
+  }
+  if(name==='grocery'){
+    btn.classList.toggle('yellow',layers[name]);
+    layers.grocery?fetchGrocery():groceryMarkers.forEach(m=>map.removeLayer(m));
+  }
 }
 
 /* ── NEAR ME ────────────────────────────────────────────────── */
@@ -653,13 +661,28 @@ function startRoute(startCamp){
   routeStart=startCamp;
   document.getElementById('route-panel').classList.add('open');
   document.getElementById('rp-title').textContent='Tap destination camp';
-  document.getElementById('rp-stats').innerHTML='<span style="color:var(--text-dim);font-size:12px">Tap any camp to set destination</span>';
+  document.getElementById('rp-stats').innerHTML='<span style="color:var(--text-dim);font-size:12px">Tap any ⛺ camp marker to set destination</span>';
   document.getElementById('rp-camps').innerHTML='';
-  refreshMapMarkers();
+
+  // Force zoom in enough to show individual markers
+  if(map.getZoom()<8)map.setZoom(8,{animate:true});
+  // Ensure individual camp markers are visible
+  if(!Object.keys(campMarkers).length){
+    CAMPSITES.forEach(c=>{
+      const m=makeCampMarker(c);campMarkers[c.name]=m;m.addTo(map);
+    });
+  }
+  // Override clicks to pick destination
   Object.values(campMarkers).forEach(m=>{
     m.off('click');
-    const camp=CAMPSITES.find(c=>Math.abs(c.lat-m.getLatLng().lat)<0.001&&Math.abs(c.lng-m.getLatLng().lng)<0.001);
-    if(camp&&camp.name!==routeStart.name)m.on('click',e=>{L.DomEvent.stopPropagation(e);buildRoute(camp);});
+    const ll=m.getLatLng();
+    const camp=CAMPSITES.find(c=>Math.abs(c.lat-ll.lat)<0.0001&&Math.abs(c.lng-ll.lng)<0.0001);
+    if(camp&&camp.name!==routeStart.name){
+      m.setStyle({fillColor:'#7EC8E3',radius:10}); // highlight selectable camps
+      m.on('click',e=>{L.DomEvent.stopPropagation(e);buildRoute(camp);});
+    } else if(camp){
+      m.setStyle({fillColor:'#E85D26',radius:12}); // highlight start
+    }
   });
 }
 function buildRoute(end){
@@ -667,21 +690,56 @@ function buildRoute(end){
   routeLayer=L.polyline([[routeStart.lat,routeStart.lng],[end.lat,end.lng]],{color:'#E85D26',weight:4,dashArray:'8 5',opacity:.9}).addTo(map);
   map.fitBounds(routeLayer.getBounds(),{padding:[60,60]});
   const dist=Math.round(haversine(routeStart.lat,routeStart.lng,end.lat,end.lng));
-  const eta=Math.round(dist/65*60),h=Math.floor(eta/60),m=eta%60;
+  const eta=Math.round(dist/65*60),h=Math.floor(eta/60),mi=eta%60;
+
   function distToSeg(pLat,pLng,aLat,aLng,bLat,bLng){
     const dx=bLng-aLng,dy=bLat-aLat;
     if(!dx&&!dy)return haversine(pLat,pLng,aLat,aLng);
     const t=Math.max(0,Math.min(1,((pLng-aLng)*dx+(pLat-aLat)*dy)/(dx*dx+dy*dy)));
     return haversine(pLat,pLng,aLat+t*dy,aLng+t*dx);
   }
-  const along=CAMPSITES.filter(c=>c.name!==routeStart.name&&c.name!==end.name&&distToSeg(c.lat,c.lng,routeStart.lat,routeStart.lng,end.lat,end.lng)<30);
-  document.getElementById('rp-title').textContent=routeStart.name.split('–')[0].trim()+' → '+end.name.split('–')[0].trim();
-  document.getElementById('rp-stats').innerHTML=`<span class="rp-stat"><strong>${dist} km</strong></span><span class="rp-stat"><strong>~${h}h ${m}m</strong></span><span class="rp-stat" style="color:var(--green)"><strong>${along.length}</strong> camps en route</span>`;
-  document.getElementById('rp-camps').innerHTML=along.map(c=>`<div class="rp-camp"><div class="dot"></div><span class="n">${c.name.split('–')[0].trim()}</span><span class="d">${Math.round(haversine(routeStart.lat,routeStart.lng,c.lat,c.lng))}km</span></div>`).join('');
+
+  const CORRIDOR=25; // km from route line
+  const sA=routeStart,sB=end;
+
+  // Sights en route
+  const sightsAlong=SIGHTS.filter(s=>distToSeg(s.lat,s.lng,sA.lat,sA.lng,sB.lat,sB.lng)<CORRIDOR);
+  // Petrol en route
+  const petrolAlong=petrolMarkers.filter(m=>{const ll=m.getLatLng();return distToSeg(ll.lat,ll.lng,sA.lat,sA.lng,sB.lat,sB.lng)<CORRIDOR;});
+  // Stores en route
+  const storesAlong=groceryMarkers.filter(m=>{const ll=m.getLatLng();return distToSeg(ll.lat,ll.lng,sA.lat,sA.lng,sB.lat,sB.lng)<CORRIDOR;});
+
+  document.getElementById('rp-title').textContent=
+    routeStart.name.split('–')[0].trim()+' → '+end.name.split('–')[0].trim();
+  document.getElementById('rp-stats').innerHTML=
+    `<span class="rp-stat"><strong>${dist} km</strong></span>`+
+    `<span class="rp-stat"><strong>~${h}h ${mi}m</strong></span>`+
+    (sightsAlong.length?`<span class="rp-stat" style="color:var(--ice)">✦ ${sightsAlong.length} sights</span>`:``) +
+    (petrolAlong.length?`<span class="rp-stat" style="color:#E85D26)">⛽ ${petrolAlong.length} fuel</span>`:``)+
+    (storesAlong.length?`<span class="rp-stat" style="color:var(--yellow)">🛒 ${storesAlong.length} stores</span>`:``) +
+    (!sightsAlong.length&&!petrolAlong.length&&!storesAlong.length?`<span class="rp-stat" style="color:var(--text-dim)">No POIs found — enable Fuel/Stores layers first</span>`:``)
+  ;
+
+  let html='';
+  if(sightsAlong.length){
+    html+=`<div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text-dim);padding:8px 0 4px">Sights en route</div>`;
+    html+=sightsAlong.map(s=>`<div class="rp-camp"><span style="font-size:14px">${s.emoji}</span><span class="n">${s.name}</span><a href="${s.gmaps}" target="_blank" style="color:var(--ice);font-size:11px;flex-shrink:0">Nav</a></div>`).join('');
+  }
+  if(petrolAlong.length){
+    html+=`<div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text-dim);padding:8px 0 4px">Fuel en route</div>`;
+    html+=petrolAlong.map(m=>{const ll=m.getLatLng();return`<div class="rp-camp"><span style="color:#E85D26">⛽</span><span class="n">${m._name||'Petrol'}</span><a href="https://maps.google.com/?q=${ll.lat},${ll.lng}" target="_blank" style="color:var(--ice);font-size:11px;flex-shrink:0">Nav</a></div>`;}).join('');
+  }
+  if(storesAlong.length){
+    html+=`<div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text-dim);padding:8px 0 4px">Stores en route</div>`;
+    html+=storesAlong.map(m=>{const ll=m.getLatLng();return`<div class="rp-camp"><span style="color:var(--yellow)">🛒</span><span class="n">${m._name||'Store'}</span><a href="https://maps.google.com/?q=${ll.lat},${ll.lng}" target="_blank" style="color:var(--ice);font-size:11px;flex-shrink:0">Nav</a></div>`;}).join('');
+  }
+  document.getElementById('rp-camps').innerHTML=html;
+
   // Restore camp clicks
   Object.values(campMarkers).forEach(m=>{
     m.off('click');
-    const camp=CAMPSITES.find(c=>Math.abs(c.lat-m.getLatLng().lat)<0.001);
+    const ll=m.getLatLng();
+    const camp=CAMPSITES.find(c=>Math.abs(c.lat-ll.lat)<0.0001&&Math.abs(c.lng-ll.lng)<0.0001);
     if(camp)m.on('click',e=>{L.DomEvent.stopPropagation(e);showCampDetail(camp);});
   });
 }
@@ -689,9 +747,12 @@ function closeRoute(){
   document.getElementById('route-panel').classList.remove('open');
   if(routeLayer){map.removeLayer(routeLayer);routeLayer=null;}
   routeStart=null;
+  // Restore all camp marker colors and clicks
   Object.values(campMarkers).forEach(m=>{
     m.off('click');
-    const camp=CAMPSITES.find(c=>Math.abs(c.lat-m.getLatLng().lat)<0.001);
+    m.setStyle({fillColor:'#3fb950',radius:9});
+    const ll=m.getLatLng();
+    const camp=CAMPSITES.find(c=>Math.abs(c.lat-ll.lat)<0.0001&&Math.abs(c.lng-ll.lng)<0.0001);
     if(camp)m.on('click',e=>{L.DomEvent.stopPropagation(e);showCampDetail(camp);});
   });
 }
@@ -721,31 +782,48 @@ async function fetchGrocery(){
   const btn=document.getElementById('btn-grocery');
   btn.textContent='🛒 Loading…';
   try{
-    const known=['bonus','krónan','nettó','hagkaup','kjarval','10-11','samkaup'];
-    const q=`[out:json][timeout:30];(node["shop"="supermarket"](${BBOX});node["shop"="convenience"]["name"~"Bonus|Krona|Netto|Hagkaup|10-11|Samkaup",i](${BBOX}););out body;`;
-    const res=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(q)});
-    if(!res.ok)throw new Error('Overpass error '+res.status);
+    // Simple query - all supermarkets in Iceland bounding box, no special char brand filter
+    const q=`[out:json][timeout:30];node["shop"="supermarket"](${BBOX});out body;`;
+    const res=await fetch('https://overpass-api.de/api/interpreter',{
+      method:'POST',
+      body:'data='+encodeURIComponent(q)
+    });
+    if(!res.ok)throw new Error('HTTP '+res.status);
     const d=await res.json();
-    if(!d.elements?.length){btn.textContent='🛒 Stores';return;}
+    if(!d.elements?.length){btn.textContent='🛒 Stores (0)';return;}
+    const known=['bonus','kronan','netto','hagkaup','kjarval','10-11','samkaup','kostur'];
     d.elements.forEach(el=>{
       const name=el.tags?.name||el.tags?.brand||'Store';
-      const b=(el.tags?.brand||el.tags?.name||'').toLowerCase();
+      const b=(name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); // strip accents
       const isK=known.some(k=>b.includes(k));
-      const icon=L.divIcon({html:`<div style="width:12px;height:12px;border-radius:2px;background:${isK?'#d29922':'#666'};border:2px solid #0d1219"></div>`,className:'',iconAnchor:[6,6]});
+      const color=isK?'#d29922':'#888';
+      const icon=L.divIcon({
+        html:`<div style="width:13px;height:13px;border-radius:2px;background:${color};border:2px solid #0d1219"></div>`,
+        className:'',iconAnchor:[6,6]
+      });
       const m=L.marker([el.lat,el.lon],{icon}).addTo(map);
       m._name=name;
-      m.on('click',e=>{L.DomEvent.stopPropagation(e);
-        document.getElementById('drawer-detail').innerHTML=`<div class="detail-name">🛒 ${name}</div><div class="detail-meta">Grocery store</div><div class="detail-actions"><a href="https://maps.google.com/?q=${el.lat},${el.lon}" target="_blank" class="detail-btn detail-btn-primary">Navigate</a></div>`;
-        document.getElementById('drawer-detail').className='show';document.getElementById('drawer-list').className='';openDrawer();
+      m.on('click',e=>{
+        L.DomEvent.stopPropagation(e);
+        document.getElementById('drawer-detail').innerHTML=`
+          <div class="detail-name">🛒 ${name}</div>
+          <div class="detail-meta">Grocery store</div>
+          <div class="detail-actions">
+            <a href="https://maps.google.com/?q=${el.lat},${el.lon}" target="_blank" class="detail-btn detail-btn-primary">Navigate</a>
+          </div>`;
+        document.getElementById('drawer-detail').className='show';
+        document.getElementById('drawer-list').className='';
+        openDrawer();
       });
       groceryMarkers.push(m);
     });
-    btn.textContent=`🛒 Stores (${d.elements.length})`;
+    btn.textContent=`🛒 Stores (${groceryMarkers.length})`;
   }catch(e){
     console.warn('Grocery fail',e);
-    btn.textContent='🛒 Failed';
-    layers.grocery=false;btn.classList.remove('on');
-    setTimeout(()=>btn.textContent='🛒 Stores',3000);
+    btn.textContent='🛒 Failed — retry';
+    layers.grocery=false;
+    btn.classList.remove('on','yellow');
+    setTimeout(()=>btn.textContent='🛒 Stores',4000);
   }
 }
 
