@@ -3,613 +3,222 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#0d1117" />
+  <meta name="theme-color" content="#1A2744" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Iceland Trip" />
+  <meta name="apple-mobile-web-app-title" content="Ring Road" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <title>Iceland Ring Road</title>
-
-  <!-- PWA Manifest -->
+  <title>Ring Road Iceland</title>
   <link rel="manifest" href="/manifest.json" />
   <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-
-  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
   <style>
-    /* ============================================================
-       TOKENS & RESET
-    ============================================================ */
     :root {
-      --bg:          #0d1117;
-      --surface:     #161b22;
-      --surface2:    #21262d;
-      --border:      #30363d;
-      --text:        #e6edf3;
-      --text-muted:  #8b949e;
-      --accent:      #58a6ff;
-      --accent-dim:  rgba(88,166,255,.15);
-      --green:       #3fb950;
-      --yellow:      #d29922;
-      --red:         #f85149;
-      --orange:      #e3622e;
+      --bg:#0d1219; --surface:#1A2744; --surface2:#0f1a2e; --border:#2a3a5a;
+      --text:#e0eefa; --text-muted:#7EC8E3; --text-dim:#4a6080;
+      --accent:#E85D26; --accent-dim:rgba(232,93,38,.15);
+      --ice:#7EC8E3; --ice-dim:rgba(126,200,227,.15);
+      --green:#3fb950; --yellow:#d29922; --red:#f85149; --orange:#E85D26;
+      --nav-h:64px; --status-h:48px;
+      --safe-top:env(safe-area-inset-top,0px); --safe-bot:env(safe-area-inset-bottom,0px);
+      --safe-left:env(safe-area-inset-left,0px); --safe-right:env(safe-area-inset-right,0px);
+      --radius:12px; --radius-sm:8px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased}
+    button{cursor:pointer;border:none;background:none;color:inherit;font:inherit}
+    a{color:var(--ice);text-decoration:none}
+    #app{display:flex;flex-direction:column;height:100%;padding-top:var(--safe-top);padding-bottom:var(--safe-bot)}
+    #status-bar{flex-shrink:0;height:var(--status-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;padding:0 16px;font-size:13px}
+    .status-pill{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;background:var(--surface2);border:1px solid var(--border);white-space:nowrap;font-size:12px;font-weight:600}
+    .status-pill .dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+    .status-pill .dot.warn{background:var(--yellow)}
+    .status-pill .dot.danger{background:var(--red)}
+    .status-time{color:var(--text-dim);margin-left:auto;font-size:11px}
+    #content{flex:1;min-height:0;position:relative}
+    .tab-panel{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden}
+    .tab-panel.active{display:flex}
+    #bottom-nav{flex-shrink:0;height:var(--nav-h);background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:stretch;padding-left:var(--safe-left);padding-right:var(--safe-right)}
+    .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px 4px;color:var(--text-dim);position:relative;transition:color .15s}
+    .nav-btn.active{color:var(--accent)}
+    .nav-btn.active::after{content:'';position:absolute;top:0;left:20%;right:20%;height:2px;background:var(--accent);border-radius:0 0 2px 2px}
+    .nav-btn svg{width:22px;height:22px}
+    .nav-btn span{font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+    .panel-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+    .panel-scroll::-webkit-scrollbar{width:3px}
+    .panel-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+    .panel-header{padding:16px 16px 8px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);border-bottom:1px solid var(--border)}
+    .card{margin:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:border-color .15s}
+    .card:active{border-color:var(--accent)}
+    .card-header{display:flex;align-items:flex-start;gap:10px;padding:14px}
+    .card-icon{width:40px;height:40px;border-radius:var(--radius-sm);background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+    .card-body{flex:1;min-width:0}
+    .card-title{font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .card-sub{font-size:12px;color:var(--text-muted);margin-top:2px}
+    .card-badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;flex-shrink:0;align-self:flex-start}
+    .badge-green{background:rgba(63,185,80,.15);color:var(--green)}
+    .badge-yellow{background:rgba(210,153,34,.15);color:var(--yellow)}
+    .badge-blue{background:var(--ice-dim);color:var(--ice)}
+    .card-actions{display:flex;border-top:1px solid var(--border)}
+    .card-action-btn{flex:1;padding:12px;font-size:12px;font-weight:600;color:var(--ice);text-align:center;transition:background .15s}
+    .card-action-btn:active{background:var(--ice-dim)}
+    .card-action-btn+.card-action-btn{border-left:1px solid var(--border)}
 
-      --nav-h:       64px;
-      --status-h:    48px;
-      --safe-top:    env(safe-area-inset-top, 0px);
-      --safe-bot:    env(safe-area-inset-bottom, 0px);
-      --safe-left:   env(safe-area-inset-left, 0px);
-      --safe-right:  env(safe-area-inset-right, 0px);
-      --radius:      12px;
-      --radius-sm:   8px;
-    }
+    /* MAP */
+    #map-panel{position:relative}
+    #map{flex:1;min-height:0}
+    .map-layer-toggle{position:absolute;left:14px;bottom:14px;z-index:1000;display:flex;gap:6px;flex-wrap:wrap;max-width:230px}
+    .layer-btn{padding:7px 11px;border-radius:20px;background:var(--surface);border:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text-dim);box-shadow:0 4px 12px rgba(0,0,0,.5);transition:all .15s}
+    .layer-btn.on{background:var(--ice-dim);border-color:var(--ice);color:var(--ice)}
+    .layer-btn.on.fire{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    .map-fab-group{position:absolute;right:14px;bottom:14px;z-index:1000;display:flex;flex-direction:column;gap:8px}
+    .map-fab{width:46px;height:46px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.5);transition:transform .1s,background .15s}
+    .map-fab:active{transform:scale(.9)}
+    .map-fab.active-fab{background:var(--accent-dim);border-color:var(--accent)}
+    .map-fab svg{width:20px;height:20px}
+    #route-panel{position:absolute;left:14px;top:14px;z-index:1000;width:calc(100% - 28px);max-width:340px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.5);display:none}
+    #route-panel.open{display:block}
+    .route-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .route-title{font-size:14px;font-weight:700;color:var(--text)}
+    .route-close{color:var(--text-dim);font-size:22px;padding:0 4px;line-height:1}
+    .route-stat{display:inline-flex;align-items:center;gap:4px;margin-right:10px;font-size:12px;color:var(--text-muted)}
+    .route-stat strong{color:var(--text)}
+    .route-camp-item{display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--border);font-size:12px}
+    .route-camp-item .dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0}
+    .route-camp-item .name{flex:1;color:var(--text)}
+    .route-camp-item .dist{color:var(--text-dim)}
+    #map-sheet{position:absolute;bottom:-100%;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;z-index:1500;transition:bottom .3s cubic-bezier(.4,0,.2,1);box-shadow:0 -8px 32px rgba(0,0,0,.6)}
+    #map-sheet.open{bottom:0}
+    .sheet-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:10px auto 14px;cursor:pointer}
+    .sheet-content{padding:0 16px 20px}
+    .sheet-title{font-size:17px;font-weight:700;color:var(--text)}
+    .sheet-sub{font-size:13px;color:var(--text-muted);margin-top:4px}
+    .sheet-actions{display:flex;gap:8px;margin-top:14px}
+    .sheet-btn{flex:1;padding:13px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;text-align:center;transition:opacity .15s}
+    .sheet-btn:active{opacity:.7}
+    .sheet-btn-primary{background:var(--accent);color:#fff}
+    .sheet-btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+    #nearby-sheet{position:absolute;bottom:-100%;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;z-index:2000;transition:bottom .3s cubic-bezier(.4,0,.2,1);max-height:65%;display:flex;flex-direction:column;box-shadow:0 -8px 32px rgba(0,0,0,.6)}
+    #nearby-sheet.open{bottom:0}
+    .nearby-handle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 16px 6px}
+    .nearby-filters{display:flex;gap:6px;padding:0 12px 8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .nearby-filter-btn{flex-shrink:0;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);transition:all .15s}
+    .nearby-filter-btn.active{background:var(--ice-dim);border-color:var(--ice);color:var(--ice)}
+    #nearby-list{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 0 8px}
+    .nearby-item{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border)}
+    .nearby-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+    .nearby-body{flex:1;min-width:0}
+    .nearby-name{font-size:14px;font-weight:600;color:var(--text)}
+    .nearby-meta{font-size:12px;color:var(--text-muted);margin-top:2px}
+    .nearby-nav{color:var(--ice);font-size:12px;font-weight:700;flex-shrink:0}
+    .leaflet-control-zoom a{background:var(--surface)!important;color:var(--text)!important;border-color:var(--border)!important}
+    .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--surface)!important;color:var(--text)!important;border:1px solid var(--border)!important}
+    .leaflet-container{font-family:inherit!important}
+    .cluster-marker{background:var(--surface);border:2px solid var(--border);border-radius:var(--radius-sm);padding:4px 8px;display:flex;gap:6px;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.5);cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap}
+    .cluster-marker .cg{color:var(--green)}
+    .cluster-marker .cb{color:var(--ice)}
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    /* WEATHER */
+    .station-selector{display:flex;gap:8px;padding:12px 12px 4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+    .station-selector::-webkit-scrollbar{display:none}
+    .station-chip{flex-shrink:0;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);transition:all .15s}
+    .station-chip.active{background:var(--ice-dim);border-color:var(--ice);color:var(--ice)}
+    .weather-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px}
+    .weather-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+    .weather-stat-label{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px}
+    .weather-stat-value{font-size:26px;font-weight:700;color:var(--text);line-height:1}
+    .weather-stat-unit{font-size:13px;color:var(--text-dim);margin-left:3px}
+    .wind-calm{color:var(--green)} .wind-mod{color:var(--yellow)} .wind-strong{color:var(--orange)} .wind-storm{color:var(--red)}
+    #wind-map-wrap{margin:0 12px 12px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)}
+    #wind-map-title{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);padding:10px 12px 6px}
+    #wind-map{height:200px}
+    .alerts-section{padding:0 12px 16px}
+    .alerts-title{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);padding:12px 0 8px}
+    .region-alert{margin-bottom:8px;padding:12px 14px;border-radius:var(--radius-sm);border-left:3px solid;background:var(--surface)}
+    .region-alert.danger{border-color:var(--red);background:rgba(248,81,73,.07)}
+    .region-alert.warning{border-color:var(--yellow);background:rgba(210,153,34,.07)}
+    .region-alert.clear{border-color:var(--green);background:rgba(63,185,80,.07)}
+    .region-alert-name{font-size:13px;font-weight:700;color:var(--text)}
+    .region-alert-desc{font-size:12px;color:var(--text-muted);margin-top:3px;line-height:1.5}
 
-    html, body {
-      height: 100%;
-      width: 100%;
-      overflow: hidden;
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      -webkit-tap-highlight-color: transparent;
-      -webkit-font-smoothing: antialiased;
-    }
+    /* ROADS */
+    #panel-roads{display:none;flex-direction:column}
+    #panel-roads.active{display:flex}
+    .roads-header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 16px;flex-shrink:0}
+    .roads-status-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+    .roads-links{display:flex;gap:8px;flex-wrap:wrap}
+    .roads-link-btn{padding:6px 12px;border-radius:20px;font-size:11px;font-weight:700;background:var(--surface2);border:1px solid var(--border);color:var(--ice);transition:background .15s}
+    .roads-link-btn:active{background:var(--ice-dim)}
+    .roads-link-emergency{color:var(--red)!important;border-color:var(--red)!important}
+    #roads-iframe-wrap{flex:1;min-height:0;position:relative}
+    #roads-iframe{width:100%;height:100%;border:none;filter:invert(1) hue-rotate(180deg) saturate(0.7) brightness(0.9)}
 
-    button { cursor: pointer; border: none; background: none; color: inherit; font: inherit; }
-    a { color: var(--accent); text-decoration: none; }
+    /* LOADING */
+    .loading-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px 20px;color:var(--text-dim);font-size:14px}
+    .spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .empty-state{text-align:center;padding:40px 20px;color:var(--text-dim);font-size:14px}
+    .empty-state .icon{font-size:36px;margin-bottom:10px}
 
-    /* ============================================================
-       LAYOUT SHELL
-    ============================================================ */
-    #app {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      padding-top: var(--safe-top);
-      padding-bottom: var(--safe-bot);
-    }
-
-    /* ---- Status Bar ---- */
-    #status-bar {
-      flex-shrink: 0;
-      height: var(--status-h);
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 0 16px;
-      font-size: 13px;
-      overflow: hidden;
-    }
-    #status-bar .status-pill {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      padding: 4px 10px;
-      border-radius: 20px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      white-space: nowrap;
-      font-size: 12px;
-      font-weight: 500;
-    }
-    #status-bar .status-pill .dot {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: var(--green);
-    }
-    #status-bar .status-pill .dot.warn { background: var(--yellow); }
-    #status-bar .status-pill .dot.danger { background: var(--red); }
-    #status-bar .status-sep { color: var(--border); }
-    #status-bar .status-time { color: var(--text-muted); margin-left: auto; font-size: 11px; }
-
-    /* ---- Content Area ---- */
-    #content {
-      flex: 1;
-      min-height: 0;
-      position: relative;
-    }
-
-    .tab-panel {
-      position: absolute;
-      inset: 0;
-      display: none;
-      flex-direction: column;
-      overflow: hidden;
-    }
-    .tab-panel.active {
-      display: flex;
-    }
-
-    /* ---- Bottom Nav ---- */
-    #bottom-nav {
-      flex-shrink: 0;
-      height: var(--nav-h);
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      display: flex;
-      align-items: stretch;
-      padding-left: var(--safe-left);
-      padding-right: var(--safe-right);
-    }
-    .nav-btn {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      padding: 8px 4px;
-      border-radius: 0;
-      transition: background .15s, color .15s;
-      color: var(--text-muted);
-      position: relative;
-    }
-    .nav-btn.active {
-      color: var(--accent);
-    }
-    .nav-btn.active::after {
-      content: '';
-      position: absolute;
-      top: 0; left: 20%; right: 20%;
-      height: 2px;
-      background: var(--accent);
-      border-radius: 0 0 2px 2px;
-    }
-    .nav-btn svg { width: 22px; height: 22px; }
-    .nav-btn span { font-size: 10px; font-weight: 600; letter-spacing: .4px; text-transform: uppercase; }
-
-    /* ============================================================
-       SCROLLABLE LIST PANELS
-    ============================================================ */
-    .panel-scroll {
-      flex: 1;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior: contain;
-    }
-    .panel-scroll::-webkit-scrollbar { width: 3px; }
-    .panel-scroll::-webkit-scrollbar-track { background: transparent; }
-    .panel-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-    .panel-header {
-      padding: 16px 16px 8px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      border-bottom: 1px solid var(--border);
-    }
-
-    /* ---- Cards ---- */
-    .card {
-      margin: 8px 12px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      transition: border-color .15s;
-    }
-    .card:active { border-color: var(--accent); }
-
-    .card-header {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      padding: 14px;
-    }
-    .card-icon {
-      width: 40px; height: 40px;
-      border-radius: var(--radius-sm);
-      background: var(--surface2);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 20px;
-      flex-shrink: 0;
-    }
-    .card-body { flex: 1; min-width: 0; }
-    .card-title {
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .card-sub {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 2px;
-    }
-    .card-badge {
-      font-size: 11px;
-      font-weight: 600;
-      padding: 3px 8px;
-      border-radius: 20px;
-      flex-shrink: 0;
-      align-self: flex-start;
-    }
-    .badge-green  { background: rgba(63,185,80,.15);  color: var(--green); }
-    .badge-yellow { background: rgba(210,153,34,.15); color: var(--yellow); }
-    .badge-red    { background: rgba(248,81,73,.15);  color: var(--red); }
-    .badge-blue   { background: var(--accent-dim);    color: var(--accent); }
-
-    .card-actions {
-      display: flex;
-      border-top: 1px solid var(--border);
-    }
-    .card-action-btn {
-      flex: 1;
-      padding: 12px;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--accent);
-      text-align: center;
-      transition: background .15s;
-    }
-    .card-action-btn:active { background: var(--accent-dim); }
-    .card-action-btn + .card-action-btn { border-left: 1px solid var(--border); }
-
-    /* ============================================================
-       MAP TAB
-    ============================================================ */
-    #map-panel { position: relative; }
-
-    #map {
-      flex: 1;
-      min-height: 0;
-    }
-
-    /* Floating controls */
-    .map-fab-group {
-      position: absolute;
-      right: 14px;
-      bottom: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      z-index: 1000;
-    }
-    .map-fab {
-      width: 44px; height: 44px;
-      border-radius: 50%;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px;
-      box-shadow: 0 4px 12px rgba(0,0,0,.4);
-      transition: background .15s, transform .1s;
-    }
-    .map-fab:active { transform: scale(.92); background: var(--surface2); }
-    .map-fab svg { width: 20px; height: 20px; }
-
-    .map-layer-toggle {
-      position: absolute;
-      left: 14px;
-      bottom: 14px;
-      z-index: 1000;
-      display: flex;
-      gap: 6px;
-    }
-    .layer-btn {
-      padding: 8px 12px;
-      border-radius: 20px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-muted);
-      box-shadow: 0 4px 12px rgba(0,0,0,.4);
-      transition: all .15s;
-    }
-    .layer-btn.on {
-      background: var(--accent-dim);
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-
-    /* Bottom sheet for map popups */
-    #map-sheet {
-      position: absolute;
-      bottom: -100%;
-      left: 0; right: 0;
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      border-radius: var(--radius) var(--radius) 0 0;
-      z-index: 2000;
-      transition: bottom .3s cubic-bezier(.4,0,.2,1);
-      padding-bottom: 8px;
-      box-shadow: 0 -8px 32px rgba(0,0,0,.5);
-    }
-    #map-sheet.open { bottom: 0; }
-    .sheet-handle {
-      width: 36px; height: 4px;
-      background: var(--border);
-      border-radius: 2px;
-      margin: 10px auto 14px;
-    }
-    .sheet-content { padding: 0 16px 16px; }
-    .sheet-title { font-size: 17px; font-weight: 700; }
-    .sheet-sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
-    .sheet-actions { display: flex; gap: 8px; margin-top: 14px; }
-    .sheet-btn {
-      flex: 1;
-      padding: 12px;
-      border-radius: var(--radius-sm);
-      font-size: 14px;
-      font-weight: 600;
-      text-align: center;
-      transition: opacity .15s;
-    }
-    .sheet-btn:active { opacity: .7; }
-    .sheet-btn-primary { background: var(--accent); color: #0d1117; }
-    .sheet-btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-
-    /* Leaflet overrides for dark */
-    .leaflet-control-zoom a {
-      background: var(--surface) !important;
-      color: var(--text) !important;
-      border-color: var(--border) !important;
-    }
-    .leaflet-popup-content-wrapper,
-    .leaflet-popup-tip {
-      background: var(--surface) !important;
-      color: var(--text) !important;
-      border: 1px solid var(--border) !important;
-      box-shadow: 0 8px 24px rgba(0,0,0,.5) !important;
-    }
-    .leaflet-container { font-family: inherit !important; }
-
-    /* ============================================================
-       WEATHER TAB
-    ============================================================ */
-    .weather-hero {
-      padding: 20px 16px;
-      background: linear-gradient(135deg, #0d1b2a 0%, #162032 100%);
-      border-bottom: 1px solid var(--border);
-    }
-    .weather-station-selector {
-      display: flex;
-      gap: 8px;
-      padding: 12px 12px 4px;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-    }
-    .weather-station-selector::-webkit-scrollbar { display: none; }
-    .station-chip {
-      flex-shrink: 0;
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      transition: all .15s;
-    }
-    .station-chip.active {
-      background: var(--accent-dim);
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-    .weather-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      padding: 12px;
-    }
-    .weather-stat {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px;
-    }
-    .weather-stat-label {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .8px;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-    }
-    .weather-stat-value {
-      font-size: 26px;
-      font-weight: 700;
-      color: var(--text);
-      line-height: 1;
-    }
-    .weather-stat-unit {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-left: 3px;
-    }
-
-    /* wind color values */
-    .wind-calm   { color: var(--green); }
-    .wind-mod    { color: var(--yellow); }
-    .wind-strong { color: var(--orange); }
-    .wind-storm  { color: var(--red); }
-
-    /* ============================================================
-       ROADS TAB
-    ============================================================ */
-    .alert-banner {
-      margin: 8px 12px;
-      padding: 14px;
-      border-radius: var(--radius);
-      border-left: 3px solid;
-      background: var(--surface);
-      border-color: var(--border);
-    }
-    .alert-banner.closed  { border-color: var(--red);    background: rgba(248,81,73,.08); }
-    .alert-banner.warning { border-color: var(--yellow); background: rgba(210,153,34,.08); }
-    .alert-banner.info    { border-color: var(--accent); background: var(--accent-dim); }
-    .alert-title { font-size: 14px; font-weight: 600; }
-    .alert-desc  { font-size: 12px; color: var(--text-muted); margin-top: 4px; line-height: 1.5; }
-    .alert-meta  { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
-
-    /* ============================================================
-       PULL-TO-REFRESH
-    ============================================================ */
-    .ptr-spinner {
-      text-align: center;
-      padding: 12px;
-      color: var(--text-muted);
-      font-size: 12px;
-      display: none;
-    }
-    .ptr-spinner.visible { display: block; }
-
-    /* ============================================================
-       LOADING / ERROR STATES
-    ============================================================ */
-    .loading-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      padding: 40px 20px;
-      color: var(--text-muted);
-      font-size: 14px;
-    }
-    .spinner {
-      width: 28px; height: 28px;
-      border: 2px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .empty-state {
-      text-align: center;
-      padding: 40px 20px;
-      color: var(--text-muted);
-      font-size: 14px;
-    }
-    .empty-state .icon { font-size: 36px; margin-bottom: 10px; }
-
-    /* ============================================================
-       INSTALL BANNER
-    ============================================================ */
-    #install-banner {
-      position: fixed;
-      bottom: calc(var(--nav-h) + var(--safe-bot) + 8px);
-      left: 12px; right: 12px;
-      background: var(--surface);
-      border: 1px solid var(--accent);
-      border-radius: var(--radius);
-      padding: 14px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      box-shadow: 0 8px 32px rgba(0,0,0,.5);
-      z-index: 9999;
-      transform: translateY(calc(100% + 80px));
-      transition: transform .4s cubic-bezier(.4,0,.2,1);
-    }
-    #install-banner.show { transform: translateY(0); }
-    #install-banner .icon { font-size: 28px; flex-shrink: 0; }
-    #install-banner .text { flex: 1; min-width: 0; }
-    #install-banner .text strong { display: block; font-size: 14px; }
-    #install-banner .text small { font-size: 12px; color: var(--text-muted); }
-    #install-btn {
-      padding: 8px 14px;
-      background: var(--accent);
-      color: #0d1117;
-      border-radius: var(--radius-sm);
-      font-size: 13px;
-      font-weight: 700;
-      flex-shrink: 0;
-    }
-    #install-dismiss {
-      padding: 8px;
-      color: var(--text-muted);
-      font-size: 20px;
-      line-height: 1;
-    }
-
-    /* ============================================================
-       OFFLINE TOAST
-    ============================================================ */
-    #offline-toast {
-      position: fixed;
-      top: calc(var(--safe-top) + var(--status-h) + 8px);
-      left: 50%; transform: translateX(-50%) translateY(-80px);
-      background: var(--yellow);
-      color: #0d1117;
-      font-size: 13px;
-      font-weight: 700;
-      padding: 8px 18px;
-      border-radius: 20px;
-      z-index: 9999;
-      transition: transform .3s;
-      white-space: nowrap;
-    }
-    #offline-toast.show { transform: translateX(-50%) translateY(0); }
-
-    /* ============================================================
-       RESPONSIVE DESKTOP (secondary)
-    ============================================================ */
-    @media (min-width: 640px) {
-      #bottom-nav { justify-content: center; }
-      .nav-btn { max-width: 100px; }
-      .weather-grid { grid-template-columns: repeat(4, 1fr); }
-    }
+    /* INSTALL / OFFLINE */
+    #install-banner{position:fixed;bottom:calc(var(--nav-h) + var(--safe-bot) + 8px);left:12px;right:12px;background:var(--surface);border:1px solid var(--accent);border-radius:var(--radius);padding:14px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:9999;transform:translateY(calc(100% + 80px));transition:transform .4s cubic-bezier(.4,0,.2,1)}
+    #install-banner.show{transform:translateY(0)}
+    #install-btn{padding:8px 14px;background:var(--accent);color:#fff;border-radius:var(--radius-sm);font-size:13px;font-weight:700;flex-shrink:0}
+    #install-dismiss{padding:8px;color:var(--text-dim);font-size:20px}
+    #offline-toast{position:fixed;top:calc(var(--safe-top) + var(--status-h) + 8px);left:50%;transform:translateX(-50%) translateY(-80px);background:var(--yellow);color:#0d1117;font-size:13px;font-weight:700;padding:8px 18px;border-radius:20px;z-index:9999;transition:transform .3s;white-space:nowrap}
+    #offline-toast.show{transform:translateX(-50%) translateY(0)}
+    @media(min-width:640px){.nav-btn{max-width:100px}.weather-grid{grid-template-columns:repeat(4,1fr)}}
   </style>
 </head>
 <body>
 <div id="app">
-
-  <!-- Status Bar -->
   <div id="status-bar">
-    <div class="status-pill" id="wind-status">
-      <div class="dot" id="wind-dot"></div>
-      <span id="wind-label">Wind –</span>
-    </div>
-    <div class="status-pill" id="road-status">
-      <div class="dot" id="road-dot"></div>
-      <span id="road-label">Roads –</span>
-    </div>
-    <div class="status-time" id="last-updated">Updating…</div>
+    <div class="status-pill"><div class="dot" id="wind-dot"></div><span id="wind-label">Wind –</span></div>
+    <div class="status-pill"><div class="dot" id="road-dot"></div><span id="road-label">Roads –</span></div>
+    <div class="status-time" id="last-updated">–</div>
   </div>
 
-  <!-- Content -->
   <div id="content">
-
-    <!-- ===== MAP ===== -->
+    <!-- MAP -->
     <div class="tab-panel active" id="panel-map">
       <div id="map"></div>
-
-      <!-- Layer toggles -->
+      <div id="route-panel">
+        <div class="route-header">
+          <span class="route-title" id="rp-title">Route planner</span>
+          <button class="route-close" onclick="closeRoutePanel()">×</button>
+        </div>
+        <div id="rp-stats"></div>
+        <div id="rp-camps"></div>
+      </div>
       <div class="map-layer-toggle">
-        <button class="layer-btn on" id="btn-wind-layer" onclick="toggleWindLayer()">💨 Wind</button>
-        <button class="layer-btn on" id="btn-road-layer" onclick="toggleRoadLayer()">🛣️ Roads</button>
+        <button class="layer-btn on" id="btn-wind" onclick="toggleLayer('wind')">💨 Wind</button>
+        <button class="layer-btn on fire" id="btn-roads" onclick="toggleLayer('roads')">🛣 Roads</button>
+        <button class="layer-btn" id="btn-petrol" onclick="toggleLayer('petrol')">⛽ Fuel</button>
+        <button class="layer-btn" id="btn-grocery" onclick="toggleLayer('grocery')">🛒 Stores</button>
       </div>
-
-      <!-- FABs -->
       <div class="map-fab-group">
-        <button class="map-fab" onclick="locateMe()" title="My location">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/>
-            <circle cx="12" cy="12" r="9" stroke-dasharray="4 2"/>
-          </svg>
+        <button class="map-fab" id="fab-nearby" onclick="toggleNearby()" title="Near me">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/><circle cx="12" cy="12" r="9" stroke-dasharray="4 2"/></svg>
         </button>
-        <button class="map-fab" onclick="fitRingRoad()" title="Fit Iceland">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/>
-          </svg>
+        <button class="map-fab" onclick="fitIceland()" title="Fit Iceland">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
         </button>
       </div>
-
-      <!-- Bottom Sheet -->
+      <div id="nearby-sheet">
+        <div class="nearby-handle-row">
+          <span style="font-size:13px;font-weight:700;color:var(--text)">Near me <span id="nearby-sub" style="color:var(--text-dim);font-weight:400;font-size:12px">within 50 km</span></span>
+          <button onclick="closeNearby()" style="color:var(--text-dim);font-size:22px;line-height:1;padding:0 4px">×</button>
+        </div>
+        <div class="nearby-filters">
+          <button class="nearby-filter-btn active" onclick="filterNearby('all',this)">All</button>
+          <button class="nearby-filter-btn" onclick="filterNearby('camp',this)">⛺ Camps</button>
+          <button class="nearby-filter-btn" onclick="filterNearby('sight',this)">✦ Sights</button>
+          <button class="nearby-filter-btn" onclick="filterNearby('petrol',this)">⛽ Fuel</button>
+          <button class="nearby-filter-btn" onclick="filterNearby('grocery',this)">🛒 Stores</button>
+        </div>
+        <div id="nearby-list"></div>
+      </div>
       <div id="map-sheet">
         <div class="sheet-handle" onclick="closeSheet()"></div>
         <div class="sheet-content">
@@ -620,602 +229,547 @@
       </div>
     </div>
 
-    <!-- ===== CAMPSITES ===== -->
+    <!-- CAMPS -->
     <div class="tab-panel" id="panel-campsites">
       <div class="panel-header">23 Year-Round Campsites</div>
-      <div class="panel-scroll" id="camp-list">
-        <div class="loading-state"><div class="spinner"></div>Loading…</div>
-      </div>
+      <div class="panel-scroll" id="camp-list"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>
     </div>
 
-    <!-- ===== SIGHTS ===== -->
+    <!-- SIGHTS -->
     <div class="tab-panel" id="panel-sights">
       <div class="panel-header">17 Curated Attractions</div>
-      <div class="panel-scroll" id="sights-list">
-        <div class="loading-state"><div class="spinner"></div>Loading…</div>
-      </div>
+      <div class="panel-scroll" id="sights-list"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>
     </div>
 
-    <!-- ===== WEATHER ===== -->
+    <!-- WEATHER -->
     <div class="tab-panel" id="panel-weather">
       <div class="panel-scroll">
-        <div class="weather-station-selector" id="station-chips"></div>
-        <div class="weather-grid" id="weather-grid">
-          <div class="loading-state" style="grid-column:1/-1"><div class="spinner"></div>Fetching stations…</div>
+        <div class="station-selector" id="station-chips"></div>
+        <div class="weather-grid" id="weather-grid"><div class="loading-state" style="grid-column:1/-1"><div class="spinner"></div>Loading…</div></div>
+        <div id="wind-map-wrap">
+          <div id="wind-map-title">Wind across Iceland</div>
+          <div id="wind-map"></div>
+        </div>
+        <div class="alerts-section">
+          <div class="alerts-title">Regional alerts — safetravel.is</div>
+          <div id="regional-alerts"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>
         </div>
       </div>
     </div>
 
-    <!-- ===== ROADS ===== -->
+    <!-- ROADS -->
     <div class="tab-panel" id="panel-roads">
-      <div class="panel-header">Live Road Status — safetravel.is</div>
-      <div class="panel-scroll" id="roads-list">
-        <div class="loading-state"><div class="spinner"></div>Loading alerts…</div>
+      <div class="roads-header">
+        <div class="roads-status-row">
+          <div class="status-pill"><div class="dot" id="road-dot2"></div><span id="road-label2">Loading…</span></div>
+        </div>
+        <div class="roads-links">
+          <a class="roads-link-btn" href="https://umferdin.is/en" target="_blank">umferdin.is</a>
+          <a class="roads-link-btn" href="https://vedur.is" target="_blank">vedur.is</a>
+          <a class="roads-link-btn" href="https://safetravel.is" target="_blank">safetravel.is</a>
+          <a class="roads-link-btn roads-link-emergency" href="tel:112">📞 112</a>
+        </div>
+      </div>
+      <div id="roads-iframe-wrap">
+        <iframe id="roads-iframe" src="https://umferdin.is/en" title="Iceland road conditions" loading="lazy" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
       </div>
     </div>
+  </div>
 
-  </div><!-- /content -->
-
-  <!-- Bottom Nav -->
   <nav id="bottom-nav">
     <button class="nav-btn active" data-tab="map" onclick="switchTab('map',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
-        <line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/>
-      </svg>
-      <span>Map</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg><span>Map</span>
     </button>
     <button class="nav-btn" data-tab="campsites" onclick="switchTab('campsites',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M22 20L12 4 2 20h20z"/><line x1="12" y1="4" x2="12" y2="20"/>
-      </svg>
-      <span>Camps</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 20L12 4 2 20h20z"/><line x1="12" y1="4" x2="12" y2="20"/></svg><span>Camps</span>
     </button>
     <button class="nav-btn" data-tab="sights" onclick="switchTab('sights',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="3"/><path d="M12 1v4m0 14v4M1 12h4m14 0h4"/>
-        <path d="M4.22 4.22l2.83 2.83m9.9 9.9l2.83 2.83M19.78 4.22l-2.83 2.83m-9.9 9.9l-2.83 2.83"/>
-      </svg>
-      <span>Sights</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4m0 14v4M1 12h4m14 0h4"/><path d="M4.22 4.22l2.83 2.83m9.9 9.9l2.83 2.83M19.78 4.22l-2.83 2.83m-9.9 9.9l-2.83 2.83"/></svg><span>Sights</span>
     </button>
     <button class="nav-btn" data-tab="weather" onclick="switchTab('weather',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/>
-      </svg>
-      <span>Weather</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/></svg><span>Weather</span>
     </button>
     <button class="nav-btn" data-tab="roads" onclick="switchTab('roads',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v9a2 2 0 01-2 2h-2"/>
-        <circle cx="9" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>
-      </svg>
-      <span>Roads</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v9a2 2 0 01-2 2h-2"/><circle cx="9" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg><span>Roads</span>
     </button>
   </nav>
+</div>
 
-</div><!-- /app -->
-
-<!-- Install Banner -->
 <div id="install-banner">
-  <div class="icon">🏔️</div>
-  <div class="text">
-    <strong>Add to Home Screen</strong>
-    <small>Offline maps + live alerts</small>
-  </div>
+  <div style="font-size:28px;flex-shrink:0">🏔️</div>
+  <div style="flex:1"><strong style="display:block;font-size:14px">Add to Home Screen</strong><small style="font-size:12px;color:var(--text-dim)">Offline maps + live alerts</small></div>
   <button id="install-btn" onclick="doInstall()">Install</button>
   <button id="install-dismiss" onclick="dismissInstall()">×</button>
 </div>
-
-<!-- Offline Toast -->
-<div id="offline-toast">⚡ No connection — showing cached data</div>
+<div id="offline-toast">⚡ No connection — cached data shown</div>
 
 <script>
-/* ================================================================
-   DATA
-================================================================ */
-const CAMPSITES = [
-  { name:'Reykjavík – Laugardalur', lat:64.141, lng:-21.877, type:'Premium', note:'Hot tubs on site', gmaps:'https://maps.google.com/?q=64.141,-21.877' },
-  { name:'Selfoss – Árból', lat:63.932, lng:-21.000, type:'Basic', note:'By Ölfusá river', gmaps:'https://maps.google.com/?q=63.932,-21.000' },
-  { name:'Vík – Norður-Vík', lat:63.419, lng:-19.010, type:'Premium', note:'Black beach views', gmaps:'https://maps.google.com/?q=63.419,-19.010' },
-  { name:'Skaftafell – Vatnajökull NP', lat:63.996, lng:-16.969, type:'NP', note:'Glacier hikes', gmaps:'https://maps.google.com/?q=63.996,-16.969' },
-  { name:'Höfn – Hamrar', lat:64.252, lng:-15.208, type:'Basic', note:'Glacier lagoon nearby', gmaps:'https://maps.google.com/?q=64.252,-15.208' },
-  { name:'Djúpivogur', lat:64.656, lng:-14.291, type:'Basic', note:'Quiet east fjords', gmaps:'https://maps.google.com/?q=64.656,-14.291' },
-  { name:'Egilsstaðir – Lyngholt', lat:65.268, lng:-14.394, type:'Premium', note:'Hot showers', gmaps:'https://maps.google.com/?q=65.268,-14.394' },
-  { name:'Seyðisfjörður', lat:65.259, lng:-14.008, type:'Basic', note:'Fjord side', gmaps:'https://maps.google.com/?q=65.259,-14.008' },
-  { name:'Þórshöfn', lat:66.199, lng:-15.333, type:'Basic', note:'Remote north-east', gmaps:'https://maps.google.com/?q=66.199,-15.333' },
-  { name:'Húsavík', lat:66.044, lng:-17.338, type:'Premium', note:'Whale watching', gmaps:'https://maps.google.com/?q=66.044,-17.338' },
-  { name:'Goðafoss – Fosshóll', lat:65.685, lng:-17.539, type:'Basic', note:'Walk to waterfall', gmaps:'https://maps.google.com/?q=65.685,-17.539' },
-  { name:'Akureyri – Hamrar', lat:65.676, lng:-18.085, type:'Premium', note:'City facilities', gmaps:'https://maps.google.com/?q=65.676,-18.085' },
-  { name:'Hvammstangi', lat:65.400, lng:-20.949, type:'Basic', note:'Seal centre nearby', gmaps:'https://maps.google.com/?q=65.400,-20.949' },
-  { name:'Borgarnes – Brautarholt', lat:64.540, lng:-21.910, type:'Basic', note:'Settlement centre', gmaps:'https://maps.google.com/?q=64.540,-21.910' },
-  { name:'Ísafjörður', lat:66.075, lng:-23.136, type:'Premium', note:'Westfjords base', gmaps:'https://maps.google.com/?q=66.075,-23.136' },
-  { name:'Snæfellsnes – Hellissandur', lat:64.922, lng:-23.905, type:'Basic', note:'Glacier peninsula', gmaps:'https://maps.google.com/?q=64.922,-23.905' },
-  { name:'Grundarfjörður', lat:64.918, lng:-23.245, type:'Basic', note:'Kirkjufell views', gmaps:'https://maps.google.com/?q=64.918,-23.245' },
-  { name:'Stykishólmur', lat:65.071, lng:-22.710, type:'Basic', note:'Ferry to Westfjords', gmaps:'https://maps.google.com/?q=65.071,-22.710' },
-  { name:'Flúðir', lat:64.133, lng:-20.318, type:'Basic', note:'Secret Lagoon area', gmaps:'https://maps.google.com/?q=64.133,-20.318' },
-  { name:'Þórsmörk – Húsadalur', lat:63.683, lng:-19.518, type:'NP', note:'Highland access', gmaps:'https://maps.google.com/?q=63.683,-19.518' },
-  { name:'Kirkjubæjarklaustur', lat:63.785, lng:-18.058, type:'Basic', note:'Laki eruption site', gmaps:'https://maps.google.com/?q=63.785,-18.058' },
-  { name:'Nesjavellir', lat:64.085, lng:-21.183, type:'Basic', note:'Geothermal area', gmaps:'https://maps.google.com/?q=64.085,-21.183' },
-  { name:'Hella', lat:63.834, lng:-20.397, type:'Basic', note:'South Iceland hub', gmaps:'https://maps.google.com/?q=63.834,-20.397' },
+/* ================================================================ DATA */
+const CAMPSITES=[
+  {name:'Reykjavík – Laugardalur',lat:64.141,lng:-21.877,type:'Premium',note:'Hot tubs on site',gmaps:'https://maps.google.com/?q=64.141,-21.877'},
+  {name:'Selfoss – Árból',lat:63.932,lng:-21.000,type:'Basic',note:'By Ölfusá river',gmaps:'https://maps.google.com/?q=63.932,-21.000'},
+  {name:'Vík – Norður-Vík',lat:63.419,lng:-19.010,type:'Premium',note:'Black beach views',gmaps:'https://maps.google.com/?q=63.419,-19.010'},
+  {name:'Skaftafell – Vatnajökull NP',lat:63.996,lng:-16.969,type:'NP',note:'Glacier hikes',gmaps:'https://maps.google.com/?q=63.996,-16.969'},
+  {name:'Höfn – Hamrar',lat:64.252,lng:-15.208,type:'Basic',note:'Glacier lagoon nearby',gmaps:'https://maps.google.com/?q=64.252,-15.208'},
+  {name:'Djúpivogur',lat:64.656,lng:-14.291,type:'Basic',note:'Quiet east fjords',gmaps:'https://maps.google.com/?q=64.656,-14.291'},
+  {name:'Egilsstaðir – Lyngholt',lat:65.268,lng:-14.394,type:'Premium',note:'Hot showers',gmaps:'https://maps.google.com/?q=65.268,-14.394'},
+  {name:'Seyðisfjörður',lat:65.259,lng:-14.008,type:'Basic',note:'Fjord side',gmaps:'https://maps.google.com/?q=65.259,-14.008'},
+  {name:'Þórshöfn',lat:66.199,lng:-15.333,type:'Basic',note:'Remote north-east',gmaps:'https://maps.google.com/?q=66.199,-15.333'},
+  {name:'Húsavík',lat:66.044,lng:-17.338,type:'Premium',note:'Whale watching',gmaps:'https://maps.google.com/?q=66.044,-17.338'},
+  {name:'Goðafoss – Fosshóll',lat:65.685,lng:-17.539,type:'Basic',note:'Walk to waterfall',gmaps:'https://maps.google.com/?q=65.685,-17.539'},
+  {name:'Akureyri – Hamrar',lat:65.676,lng:-18.085,type:'Premium',note:'City facilities',gmaps:'https://maps.google.com/?q=65.676,-18.085'},
+  {name:'Hvammstangi',lat:65.400,lng:-20.949,type:'Basic',note:'Seal centre nearby',gmaps:'https://maps.google.com/?q=65.400,-20.949'},
+  {name:'Borgarnes – Brautarholt',lat:64.540,lng:-21.910,type:'Basic',note:'Settlement centre',gmaps:'https://maps.google.com/?q=64.540,-21.910'},
+  {name:'Ísafjörður',lat:66.075,lng:-23.136,type:'Premium',note:'Westfjords base',gmaps:'https://maps.google.com/?q=66.075,-23.136'},
+  {name:'Snæfellsnes – Hellissandur',lat:64.922,lng:-23.905,type:'Basic',note:'Glacier peninsula',gmaps:'https://maps.google.com/?q=64.922,-23.905'},
+  {name:'Grundarfjörður',lat:64.918,lng:-23.245,type:'Basic',note:'Kirkjufell views',gmaps:'https://maps.google.com/?q=64.918,-23.245'},
+  {name:'Stykishólmur',lat:65.071,lng:-22.710,type:'Basic',note:'Ferry to Westfjords',gmaps:'https://maps.google.com/?q=65.071,-22.710'},
+  {name:'Flúðir',lat:64.133,lng:-20.318,type:'Basic',note:'Secret Lagoon area',gmaps:'https://maps.google.com/?q=64.133,-20.318'},
+  {name:'Þórsmörk – Húsadalur',lat:63.683,lng:-19.518,type:'NP',note:'Highland access',gmaps:'https://maps.google.com/?q=63.683,-19.518'},
+  {name:'Kirkjubæjarklaustur',lat:63.785,lng:-18.058,type:'Basic',note:'Laki eruption site',gmaps:'https://maps.google.com/?q=63.785,-18.058'},
+  {name:'Nesjavellir',lat:64.085,lng:-21.183,type:'Basic',note:'Geothermal area',gmaps:'https://maps.google.com/?q=64.085,-21.183'},
+  {name:'Hella',lat:63.834,lng:-20.397,type:'Basic',note:'South Iceland hub',gmaps:'https://maps.google.com/?q=63.834,-20.397'},
+];
+const SIGHTS=[
+  {name:'Jökulsárlón',emoji:'🧊',lat:64.048,lng:-16.180,cat:'Glacier',desc:'Iceberg lagoon',gmaps:'https://maps.google.com/?q=64.048,-16.180'},
+  {name:'Seljalandsfoss',emoji:'💦',lat:63.616,lng:-19.989,cat:'Waterfall',desc:'Walk behind the fall',gmaps:'https://maps.google.com/?q=63.616,-19.989'},
+  {name:'Skógafoss',emoji:'🌊',lat:63.532,lng:-19.511,cat:'Waterfall',desc:'60m wide, rainbow spray',gmaps:'https://maps.google.com/?q=63.532,-19.511'},
+  {name:'Reynisfjara',emoji:'🖤',lat:63.405,lng:-19.044,cat:'Beach',desc:'Black sand, basalt columns',gmaps:'https://maps.google.com/?q=63.405,-19.044'},
+  {name:'Geysir & Strokkur',emoji:'💨',lat:64.312,lng:-20.300,cat:'Geyser',desc:'Erupts every 6-10 min',gmaps:'https://maps.google.com/?q=64.312,-20.300'},
+  {name:'Gullfoss',emoji:'⚡',lat:64.327,lng:-20.120,cat:'Waterfall',desc:'Two-tiered glacial fall',gmaps:'https://maps.google.com/?q=64.327,-20.120'},
+  {name:'Þingvellir NP',emoji:'🏛️',lat:64.255,lng:-21.130,cat:'Heritage',desc:'UNESCO, tectonic plates',gmaps:'https://maps.google.com/?q=64.255,-21.130'},
+  {name:'Mývatn',emoji:'🦆',lat:65.600,lng:-17.000,cat:'Nature',desc:'Volcanic craters, hot springs',gmaps:'https://maps.google.com/?q=65.600,-17.000'},
+  {name:'Dettifoss',emoji:'💪',lat:65.815,lng:-16.385,cat:'Waterfall',desc:'Most powerful in Europe',gmaps:'https://maps.google.com/?q=65.815,-16.385'},
+  {name:'Goðafoss',emoji:'🌀',lat:65.682,lng:-17.549,cat:'Waterfall',desc:'Waterfall of the Gods',gmaps:'https://maps.google.com/?q=65.682,-17.549'},
+  {name:'Kirkjufell',emoji:'⛰️',lat:64.942,lng:-23.306,cat:'Mountain',desc:'Arrow-shaped peak',gmaps:'https://maps.google.com/?q=64.942,-23.306'},
+  {name:'Snæfellsjökull',emoji:'🌋',lat:64.808,lng:-23.776,cat:'Glacier',desc:'Jules Verne glacier volcano',gmaps:'https://maps.google.com/?q=64.808,-23.776'},
+  {name:'Diamond Beach',emoji:'💎',lat:64.042,lng:-16.178,cat:'Beach',desc:'Icebergs on black sand',gmaps:'https://maps.google.com/?q=64.042,-16.178'},
+  {name:'Fjaðrárgljúfur Canyon',emoji:'🏞️',lat:63.756,lng:-18.173,cat:'Canyon',desc:'2km canyon, 100m deep',gmaps:'https://maps.google.com/?q=63.756,-18.173'},
+  {name:'Hverir (Námafjall)',emoji:'🟡',lat:65.641,lng:-16.821,cat:'Geothermal',desc:'Boiling mud, sulphur fields',gmaps:'https://maps.google.com/?q=65.641,-16.821'},
+  {name:'Svartifoss',emoji:'🏛️',lat:64.027,lng:-16.975,cat:'Waterfall',desc:'Basalt column waterfall',gmaps:'https://maps.google.com/?q=64.027,-16.975'},
+  {name:'Secret Lagoon',emoji:'♨️',lat:64.130,lng:-20.302,cat:'Hot Spring',desc:'Natural hot spring',gmaps:'https://maps.google.com/?q=64.130,-20.302'},
+];
+const STATIONS=[
+  {id:'1',name:'Reykjavík',lat:64.13,lng:-21.90},{id:'2',name:'Akureyri',lat:65.68,lng:-18.11},
+  {id:'3',name:'Egilsstaðir',lat:65.28,lng:-14.40},{id:'4',name:'Höfn',lat:64.25,lng:-15.21},
+  {id:'5',name:'Vík',lat:63.42,lng:-19.01},{id:'6',name:'Ísafjörður',lat:66.07,lng:-23.13},
+  {id:'7',name:'Selfoss',lat:63.93,lng:-21.00},{id:'8',name:'Húsavík',lat:66.04,lng:-17.34},
+  {id:'9',name:'Sauðárkrókur',lat:65.74,lng:-19.64},{id:'10',name:'Stykkishólmur',lat:65.07,lng:-22.71},
+  {id:'11',name:'Neskaupstaður',lat:65.14,lng:-13.68},{id:'12',name:'Vestmannaeyjar',lat:63.44,lng:-20.27},
+  {id:'13',name:'Kirkjubæjarklaustur',lat:63.79,lng:-18.06},
+];
+const REGIONS=[
+  {key:'reykjanes',name:'Reykjanes / SW',keywords:['reykjanes','southwest','suðvestur']},
+  {key:'south',name:'South Iceland',keywords:['south','suður','vík','south iceland']},
+  {key:'west',name:'West / Snæfellsnes',keywords:['west','vestur','snæfellsnes','borgarnes']},
+  {key:'westfjords',name:'Westfjords',keywords:['westfjords','vestfirðir','ísafjörður']},
+  {key:'north',name:'North Iceland',keywords:['north','norður','akureyri','húsavík','mývatn']},
+  {key:'northeast',name:'Northeast',keywords:['northeast','norðaustur','þórshöfn']},
+  {key:'east',name:'East fjords',keywords:['east','austur','egilsstaðir','eastfjords']},
+  {key:'highlands',name:'Highlands',keywords:['highland','hálendi','interior']},
 ];
 
-const SIGHTS = [
-  { name:'Jökulsárlón', emoji:'🧊', lat:64.048, lng:-16.180, cat:'Glacier', desc:'Iceberg lagoon, most photographed in Iceland', gmaps:'https://maps.google.com/?q=64.048,-16.180' },
-  { name:'Seljalandsfoss', emoji:'💦', lat:63.616, lng:-19.989, cat:'Waterfall', desc:'Walk behind the 60m curtain waterfall', gmaps:'https://maps.google.com/?q=63.616,-19.989' },
-  { name:'Skógafoss', emoji:'🌊', lat:63.532, lng:-19.511, cat:'Waterfall', desc:'60m wide fall with rainbow spray', gmaps:'https://maps.google.com/?q=63.532,-19.511' },
-  { name:'Reynisfjara', emoji:'🖤', lat:63.405, lng:-19.044, cat:'Beach', desc:'Black sand, basalt columns, dangerous surf', gmaps:'https://maps.google.com/?q=63.405,-19.044' },
-  { name:'Geysir & Strokkur', emoji:'💨', lat:64.312, lng:-20.300, cat:'Geyser', desc:'Erupts every 6-10 minutes', gmaps:'https://maps.google.com/?q=64.312,-20.300' },
-  { name:'Gullfoss', emoji:'⚡', lat:64.327, lng:-20.120, cat:'Waterfall', desc:'Two-tiered glacial waterfall', gmaps:'https://maps.google.com/?q=64.327,-20.120' },
-  { name:'Þingvellir NP', emoji:'🏛️', lat:64.255, lng:-21.130, cat:'Heritage', desc:'UNESCO site, tectonic plates, parliament', gmaps:'https://maps.google.com/?q=64.255,-21.130' },
-  { name:'Mývatn', emoji:'🦆', lat:65.600, lng:-17.000, cat:'Nature', desc:'Volcanic craters, lava fields, hot springs', gmaps:'https://maps.google.com/?q=65.600,-17.000' },
-  { name:'Dettifoss', emoji:'💪', lat:65.815, lng:-16.385, cat:'Waterfall', desc:'Most powerful waterfall in Europe', gmaps:'https://maps.google.com/?q=65.815,-16.385' },
-  { name:'Goðafoss', emoji:'🌀', lat:65.682, lng:-17.549, cat:'Waterfall', desc:'Waterfall of the Gods', gmaps:'https://maps.google.com/?q=65.682,-17.549' },
-  { name:'Kirkjufell', emoji:'⛰️', lat:64.942, lng:-23.306, cat:'Mountain', desc:'Arrow-shaped peak, Game of Thrones filming', gmaps:'https://maps.google.com/?q=64.942,-23.306' },
-  { name:'Snæfellsjökull', emoji:'🌋', lat:64.808, lng:-23.776, cat:'Glacier', desc:'Glacier volcano, Jules Verne inspiration', gmaps:'https://maps.google.com/?q=64.808,-23.776' },
-  { name:'Diamond Beach', emoji:'💎', lat:64.042, lng:-16.178, cat:'Beach', desc:'Icebergs wash up on black sand', gmaps:'https://maps.google.com/?q=64.042,-16.178' },
-  { name:'Fjaðrárgljúfur Canyon', emoji:'🏞️', lat:63.756, lng:-18.173, cat:'Canyon', desc:'2km canyon, 100m deep', gmaps:'https://maps.google.com/?q=63.756,-18.173' },
-  { name:'Hverir (Námafjall)', emoji:'🟡', lat:65.641, lng:-16.821, cat:'Geothermal', desc:'Boiling mud, sulphur fields', gmaps:'https://maps.google.com/?q=65.641,-16.821' },
-  { name:'Svartifoss', emoji:'🏛️', lat:64.027, lng:-16.975, cat:'Waterfall', desc:'Basalt column waterfall, Skaftafell', gmaps:'https://maps.google.com/?q=64.027,-16.975' },
-  { name:'Secret Lagoon', emoji:'♨️', lat:64.130, lng:-20.302, cat:'Hot Spring', desc:'Natural hot spring, less crowded than Blue Lagoon', gmaps:'https://maps.google.com/?q=64.130,-20.302' },
-];
+/* ================================================================ STATE */
+let map,windMap;
+let layers={wind:true,roads:true,petrol:false,grocery:false};
+let windMarkers=[],windMapMarkers=[];
+let roadLayerGroup;
+let petrolMarkers=[],groceryMarkers=[];
+let activeStation='1';
+let weatherData={};
+let userLat=null,userLng=null;
+let nearbyActive=false,nearbyFilter='all',nearbyPOI=[];
+let campMarkers=[],sightMarkers=[],clusterMarkers=[];
+let routeLayer=null,routeStart=null;
+let deferredPrompt=null;
 
-const WEATHER_STATIONS = [
-  { id:'1', name:'Reykjavík',    lat:64.13, lng:-21.90 },
-  { id:'2', name:'Akureyri',     lat:65.68, lng:-18.11 },
-  { id:'3', name:'Egilsstaðir', lat:65.28, lng:-14.40 },
-  { id:'4', name:'Höfn',         lat:64.25, lng:-15.21 },
-  { id:'5', name:'Vík',          lat:63.42, lng:-19.01 },
-  { id:'6', name:'Ísafjörður',  lat:66.07, lng:-23.13 },
-  { id:'7', name:'Selfoss',      lat:63.93, lng:-21.00 },
-  { id:'8', name:'Húsavík',      lat:66.04, lng:-17.34 },
-  { id:'9', name:'Sauðárkrókur',lat:65.74, lng:-19.64 },
-  { id:'10',name:'Stykkishólmur',lat:65.07, lng:-22.71 },
-  { id:'11',name:'Neskaupstaður',lat:65.14, lng:-13.68 },
-  { id:'12',name:'Vestmannaeyjar',lat:63.44,lng:-20.27 },
-  { id:'13',name:'Kirkjubæjarklaustur',lat:63.79,lng:-18.06 },
-];
-
-/* ================================================================
-   STATE
-================================================================ */
-let map, activeSheet = null, deferredPrompt = null;
-let windLayerOn = true, roadLayerOn = true;
-let activeStation = '1';
-let weatherData = {};
-let roadLayerGroup, windMarkers = [];
-
-/* ================================================================
-   INIT
-================================================================ */
-document.addEventListener('DOMContentLoaded', () => {
-  initMap();
-  renderCampsites();
-  renderSights();
-  renderStationChips();
-  fetchWeather();
-  fetchRoads();
-  setInterval(() => { fetchWeather(); fetchRoads(); }, 5 * 60 * 1000);
-  setupPWA();
-  setupOfflineDetection();
-  updateTime();
-  setInterval(updateTime, 60000);
+/* ================================================================ INIT */
+document.addEventListener('DOMContentLoaded',()=>{
+  initMap(); initWindMap();
+  renderCampsites(); renderSights(); renderStationChips();
+  fetchWeather(); fetchRoads();
+  setInterval(()=>{fetchWeather();fetchRoads();},5*60*1000);
+  setupPWA(); setupOfflineDetection();
+  updateTime(); setInterval(updateTime,60000);
 });
 
-/* ================================================================
-   NAVIGATION
-================================================================ */
-function switchTab(id, btn) {
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('panel-' + id).classList.add('active');
+/* ================================================================ NAV */
+function switchTab(id,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
   btn.classList.add('active');
-  if (id === 'map') setTimeout(() => map && map.invalidateSize(), 100);
+  if(id==='map')setTimeout(()=>{map&&map.invalidateSize();},100);
+  if(id==='weather')setTimeout(()=>{windMap&&windMap.invalidateSize();},100);
 }
 
-/* ================================================================
-   MAP
-================================================================ */
-function initMap() {
-  map = L.map('map', {
-    center: [65.0, -19.0],
-    zoom: 6,
-    zoomControl: false,
-    attributionControl: false,
-  });
-
-  // Dark basemap
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    maxZoom: 19
-  }).addTo(map);
-
-  // Road overlay
-  roadLayerGroup = L.layerGroup().addTo(map);
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
-    maxZoom: 19, opacity: 0.55
-  }).addTo(roadLayerGroup);
-
-  // Attribution (small)
-  L.control.attribution({ position:'bottomleft', prefix:'' })
-    .addAttribution('© CartoDB | ESRI').addTo(map);
-
-  // Zoom control top-right
-  L.control.zoom({ position: 'topright' }).addTo(map);
-
-  // Plot campsites
-  CAMPSITES.forEach(c => {
-    const marker = L.circleMarker([c.lat, c.lng], {
-      radius: 7, fillColor: '#3fb950', color: '#0d1117',
-      weight: 2, fillOpacity: 1
-    }).addTo(map);
-    marker.on('click', () => openSheet(c.name, c.type + ' campsite · ' + c.note, [
-      { label:'Navigate', url: c.gmaps, primary: true },
-      { label:'Route', url: `https://maps.google.com/?q=${c.lat},${c.lng}`, primary: false },
-    ]));
-  });
-
-  // Plot sights
-  SIGHTS.forEach(s => {
-    const marker = L.circleMarker([s.lat, s.lng], {
-      radius: 7, fillColor: '#58a6ff', color: '#0d1117',
-      weight: 2, fillOpacity: 1
-    }).addTo(map);
-    marker.on('click', () => openSheet(s.emoji + ' ' + s.name, s.cat + ' · ' + s.desc, [
-      { label:'Navigate', url: s.gmaps, primary: true },
-    ]));
-  });
-
-  // Close sheet on map click
-  map.on('click', closeSheet);
+/* ================================================================ MAIN MAP */
+function initMap(){
+  map=L.map('map',{center:[65.0,-19.0],zoom:6,zoomControl:false,attributionControl:false});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(map);
+  roadLayerGroup=L.layerGroup().addTo(map);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,opacity:0.5}).addTo(roadLayerGroup);
+  L.control.attribution({position:'bottomleft',prefix:''}).addAttribution('© CartoDB | ESRI | OSM').addTo(map);
+  L.control.zoom({position:'topright'}).addTo(map);
+  plotClusters();
+  map.on('click',()=>{closeSheet();});
+  map.on('zoomend',onMapZoom);
 }
 
-function locateMe() {
-  if (!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(pos => {
-    map.setView([pos.coords.latitude, pos.coords.longitude], 10);
-    L.circleMarker([pos.coords.latitude, pos.coords.longitude], {
-      radius: 9, fillColor: '#58a6ff', color: '#fff', weight: 2, fillOpacity: 1
-    }).addTo(map).bindPopup('You are here').openPopup();
+/* ── CLUSTERS ─────────────────────────────────────────────────── */
+function haversine(a,b,c,d){
+  const R=6371,dL=(c-a)*Math.PI/180,dG=(d-b)*Math.PI/180;
+  const x=Math.sin(dL/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dG/2)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+function clusterItems(items,r){
+  const used=new Set(),out=[];
+  items.forEach((item,i)=>{
+    if(used.has(i))return;
+    const g=[item];used.add(i);
+    items.forEach((o,j)=>{if(i!==j&&!used.has(j)&&haversine(item.lat,item.lng,o.lat,o.lng)<r){g.push(o);used.add(j);}});
+    out.push({lat:g.reduce((s,x)=>s+x.lat,0)/g.length,lng:g.reduce((s,x)=>s+x.lng,0)/g.length,items:g});
+  });
+  return out;
+}
+function onMapZoom(){
+  const z=map.getZoom();
+  clearMarkers();
+  if(z>=8){showIndividualMarkers();}else{plotClusters();}
+}
+function clearMarkers(){
+  clusterMarkers.forEach(m=>map.removeLayer(m));clusterMarkers=[];
+  campMarkers.forEach(m=>map.removeLayer(m));campMarkers=[];
+  sightMarkers.forEach(m=>map.removeLayer(m));sightMarkers=[];
+}
+function plotClusters(){
+  clearMarkers();
+  const z=map.getZoom();
+  const r=z<5?150:z<6?100:z<7?60:40;
+  clusterItems(CAMPSITES,r).forEach(c=>{
+    const el=document.createElement('div');el.className='cluster-marker';
+    el.innerHTML=`<span class="cg">⛺ ${c.items.length}</span>`;
+    const m=L.marker([c.lat,c.lng],{icon:L.divIcon({html:el,className:'',iconAnchor:[30,16]})}).addTo(map);
+    m.on('click',()=>c.items.length===1?showCampSheet(c.items[0]):map.setView([c.lat,c.lng],map.getZoom()+3));
+    clusterMarkers.push(m);
+  });
+  clusterItems(SIGHTS,r).forEach(c=>{
+    const el=document.createElement('div');el.className='cluster-marker';
+    el.innerHTML=`<span class="cb">✦ ${c.items.length}</span>`;
+    const m=L.marker([c.lat+0.1,c.lng+0.1],{icon:L.divIcon({html:el,className:'',iconAnchor:[30,16]})}).addTo(map);
+    m.on('click',()=>c.items.length===1?showSightSheet(c.items[0]):map.setView([c.lat,c.lng],map.getZoom()+3));
+    clusterMarkers.push(m);
   });
 }
-
-function fitRingRoad() {
-  map.setView([65.0, -19.0], 6);
+function showIndividualMarkers(){
+  CAMPSITES.forEach(c=>{
+    const m=L.circleMarker([c.lat,c.lng],{radius:8,fillColor:'#3fb950',color:'#0d1219',weight:2,fillOpacity:1}).addTo(map);
+    m.on('click',(e)=>{L.DomEvent.stopPropagation(e);showCampSheet(c);});
+    campMarkers.push(m);
+  });
+  SIGHTS.forEach(s=>{
+    const m=L.circleMarker([s.lat,s.lng],{radius:8,fillColor:'#7EC8E3',color:'#0d1219',weight:2,fillOpacity:1}).addTo(map);
+    m.on('click',(e)=>{L.DomEvent.stopPropagation(e);showSightSheet(s);});
+    sightMarkers.push(m);
+  });
+}
+function showCampSheet(c){
+  openSheet(c.name,c.type+' campsite · '+c.note,[
+    {label:'Navigate',url:c.gmaps,primary:true},
+    {label:'Plan route from here',cb:()=>startRoute(c),primary:false},
+  ]);
+}
+function showSightSheet(s){
+  openSheet(s.emoji+' '+s.name,s.cat+' · '+s.desc,[{label:'Navigate',url:s.gmaps,primary:true}]);
 }
 
-function toggleWindLayer() {
-  windLayerOn = !windLayerOn;
-  document.getElementById('btn-wind-layer').classList.toggle('on', windLayerOn);
-  windMarkers.forEach(m => windLayerOn ? m.addTo(map) : map.removeLayer(m));
+/* ── ROUTE PLANNER ─────────────────────────────────────────────── */
+function startRoute(startCamp){
+  closeSheet();
+  routeStart=startCamp;
+  document.getElementById('route-panel').classList.add('open');
+  document.getElementById('rp-title').textContent='Tap destination camp';
+  document.getElementById('rp-stats').innerHTML='<span style="color:var(--text-dim);font-size:12px">Tap any campsite marker to set destination</span>';
+  document.getElementById('rp-camps').innerHTML='';
+  // ensure individual markers visible
+  if(!campMarkers.length)showIndividualMarkers();
+  campMarkers.forEach(m=>{
+    m.off('click');
+    const camp=CAMPSITES.find(c=>Math.abs(c.lat-m.getLatLng().lat)<0.001);
+    if(camp&&camp!==routeStart)m.on('click',(e)=>{L.DomEvent.stopPropagation(e);buildRoute(camp);});
+  });
+}
+function buildRoute(end){
+  if(routeLayer){map.removeLayer(routeLayer);routeLayer=null;}
+  routeLayer=L.polyline([[routeStart.lat,routeStart.lng],[end.lat,end.lng]],{color:'#E85D26',weight:3,dashArray:'8 5',opacity:.9}).addTo(map);
+  map.fitBounds(routeLayer.getBounds(),{padding:[60,60]});
+  const dist=Math.round(haversine(routeStart.lat,routeStart.lng,end.lat,end.lng));
+  const eta=Math.round(dist/65*60);
+  const h=Math.floor(eta/60),m=eta%60;
+  const along=CAMPSITES.filter(c=>{
+    if(c===routeStart||c===end)return false;
+    return distToSeg(c.lat,c.lng,routeStart.lat,routeStart.lng,end.lat,end.lng)<30;
+  });
+  document.getElementById('rp-title').textContent=short(routeStart)+' → '+short(end);
+  document.getElementById('rp-stats').innerHTML=`<span class="route-stat"><strong>${dist} km</strong></span><span class="route-stat"><strong>~${h}h ${m}m</strong></span><span class="route-stat" style="color:var(--green)"><strong>${along.length}</strong> camps en route</span>`;
+  document.getElementById('rp-camps').innerHTML=along.map(c=>`<div class="route-camp-item"><div class="dot"></div><span class="name">${short(c)}</span><span class="dist">${Math.round(haversine(routeStart.lat,routeStart.lng,c.lat,c.lng))}km</span></div>`).join('')||'<div class="route-camp-item" style="color:var(--text-dim)">No camps directly on route</div>';
+  // restore camp clicks
+  campMarkers.forEach(m=>{m.off('click');const camp=CAMPSITES.find(c=>Math.abs(c.lat-m.getLatLng().lat)<0.001);if(camp)m.on('click',(e)=>{L.DomEvent.stopPropagation(e);showCampSheet(camp);});});
+}
+function short(c){return c.name.split('–')[0].trim().split('–')[0].trim();}
+function distToSeg(pLat,pLng,aLat,aLng,bLat,bLng){
+  const dx=bLng-aLng,dy=bLat-aLat;
+  if(!dx&&!dy)return haversine(pLat,pLng,aLat,aLng);
+  const t=Math.max(0,Math.min(1,((pLng-aLng)*dx+(pLat-aLat)*dy)/(dx*dx+dy*dy)));
+  return haversine(pLat,pLng,aLat+t*dy,aLng+t*dx);
+}
+function closeRoutePanel(){
+  document.getElementById('route-panel').classList.remove('open');
+  if(routeLayer){map.removeLayer(routeLayer);routeLayer=null;}
+  routeStart=null;
+  campMarkers.forEach(m=>{m.off('click');const camp=CAMPSITES.find(c=>Math.abs(c.lat-m.getLatLng().lat)<0.001);if(camp)m.on('click',(e)=>{L.DomEvent.stopPropagation(e);showCampSheet(camp);});});
 }
 
-function toggleRoadLayer() {
-  roadLayerOn = !roadLayerOn;
-  document.getElementById('btn-road-layer').classList.toggle('on', roadLayerOn);
-  roadLayerOn ? roadLayerGroup.addTo(map) : map.removeLayer(roadLayerGroup);
+/* ── NEAR ME ─────────────────────────────────────────────────── */
+let userMarker=null,radiusCircle=null;
+function toggleNearby(){
+  if(nearbyActive){closeNearby();return;}
+  document.getElementById('fab-nearby').classList.add('active-fab');
+  nearbyActive=true;
+  navigator.geolocation.getCurrentPosition(pos=>{
+    userLat=pos.coords.latitude;userLng=pos.coords.longitude;
+    map.setView([userLat,userLng],9);
+    if(userMarker)map.removeLayer(userMarker);
+    userMarker=L.circleMarker([userLat,userLng],{radius:9,fillColor:'#E85D26',color:'#fff',weight:2,fillOpacity:1}).addTo(map);
+    if(radiusCircle)map.removeLayer(radiusCircle);
+    radiusCircle=L.circle([userLat,userLng],{radius:50000,color:'#7EC8E3',fillColor:'#7EC8E3',fillOpacity:.04,weight:1.5,dashArray:'6 4'}).addTo(map);
+    buildNearbyList();
+    document.getElementById('nearby-sheet').classList.add('open');
+  },()=>{userLat=64.13;userLng=-21.90;buildNearbyList();document.getElementById('nearby-sheet').classList.add('open');});
+}
+function closeNearby(){
+  nearbyActive=false;
+  document.getElementById('fab-nearby').classList.remove('active-fab');
+  document.getElementById('nearby-sheet').classList.remove('open');
+  if(radiusCircle){map.removeLayer(radiusCircle);radiusCircle=null;}
+}
+function buildNearbyList(){
+  nearbyPOI=[];
+  CAMPSITES.forEach(c=>nearbyPOI.push({type:'camp',name:c.name,note:c.note,lat:c.lat,lng:c.lng,gmaps:c.gmaps,dist:haversine(userLat,userLng,c.lat,c.lng)}));
+  SIGHTS.forEach(s=>nearbyPOI.push({type:'sight',name:s.emoji+' '+s.name,note:s.cat,lat:s.lat,lng:s.lng,gmaps:s.gmaps,dist:haversine(userLat,userLng,s.lat,s.lng)}));
+  petrolMarkers.forEach(m=>{const ll=m.getLatLng();nearbyPOI.push({type:'petrol',name:'⛽ '+(m._name||'Petrol'),note:'Fuel',lat:ll.lat,lng:ll.lng,gmaps:`https://maps.google.com/?q=${ll.lat},${ll.lng}`,dist:haversine(userLat,userLng,ll.lat,ll.lng)});});
+  groceryMarkers.forEach(m=>{const ll=m.getLatLng();nearbyPOI.push({type:'grocery',name:'🛒 '+(m._name||'Store'),note:'Grocery',lat:ll.lat,lng:ll.lng,gmaps:`https://maps.google.com/?q=${ll.lat},${ll.lng}`,dist:haversine(userLat,userLng,ll.lat,ll.lng)});});
+  nearbyPOI=nearbyPOI.filter(p=>p.dist<=50).sort((a,b)=>a.dist-b.dist);
+  renderNearbyList();
+}
+function filterNearby(type,btn){
+  nearbyFilter=type;
+  document.querySelectorAll('.nearby-filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderNearbyList();
+}
+function renderNearbyList(){
+  const cm={camp:'#3fb950',sight:'#7EC8E3',petrol:'#E85D26',grocery:'#d29922'};
+  const items=nearbyFilter==='all'?nearbyPOI:nearbyPOI.filter(p=>p.type===nearbyFilter);
+  document.getElementById('nearby-list').innerHTML=items.length?items.map(p=>`<div class="nearby-item"><div class="nearby-dot" style="background:${cm[p.type]||'#7EC8E3'}"></div><div class="nearby-body"><div class="nearby-name">${p.name}</div><div class="nearby-meta">${p.note} · ${p.dist<1?'<1':Math.round(p.dist)} km</div></div><a class="nearby-nav" href="${p.gmaps}" target="_blank">Nav</a></div>`).join(''):'<div class="empty-state"><div class="icon">📍</div>Nothing within 50 km</div>';
 }
 
-function openSheet(title, sub, actions) {
-  document.getElementById('sheet-title').textContent = title;
-  document.getElementById('sheet-sub').textContent = sub;
-  const acts = document.getElementById('sheet-actions');
-  acts.innerHTML = actions.map(a =>
-    `<a href="${a.url}" target="_blank" class="sheet-btn ${a.primary ? 'sheet-btn-primary' : 'sheet-btn-secondary'}">${a.label}</a>`
+/* ── LAYERS ──────────────────────────────────────────────────── */
+function toggleLayer(name){
+  layers[name]=!layers[name];
+  document.getElementById('btn-'+name).classList.toggle('on',layers[name]);
+  if(name==='wind')windMarkers.forEach(m=>layers.wind?m.addTo(map):map.removeLayer(m));
+  if(name==='roads')layers.roads?roadLayerGroup.addTo(map):map.removeLayer(roadLayerGroup);
+  if(name==='petrol')layers.petrol?fetchPetrol():petrolMarkers.forEach(m=>map.removeLayer(m));
+  if(name==='grocery')layers.grocery?fetchGrocery():groceryMarkers.forEach(m=>map.removeLayer(m));
+}
+
+/* ── OVERPASS ─────────────────────────────────────────────────── */
+const BBOX='63.0,-25.0,67.0,-13.0';
+async function fetchPetrol(){
+  if(petrolMarkers.length){petrolMarkers.forEach(m=>m.addTo(map));return;}
+  try{
+    const q=`[out:json][timeout:25];node["amenity"="fuel"](${BBOX});out body;`;
+    const d=await(await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(q)})).json();
+    d.elements.forEach(el=>{
+      const name=el.tags?.name||el.tags?.brand||'Petrol';
+      const icon=L.divIcon({html:`<div style="width:12px;height:12px;border-radius:50%;background:#E85D26;border:2px solid #0d1219"></div>`,className:'',iconAnchor:[6,6]});
+      const m=L.marker([el.lat,el.lon],{icon}).addTo(map);
+      m._name=name;
+      m.on('click',(e)=>{L.DomEvent.stopPropagation(e);openSheet('⛽ '+name,el.tags?.brand||'Petrol station',[{label:'Navigate',url:`https://maps.google.com/?q=${el.lat},${el.lon}`,primary:true}]);});
+      petrolMarkers.push(m);
+    });
+  }catch(e){console.warn('Petrol fetch failed',e);}
+}
+async function fetchGrocery(){
+  if(groceryMarkers.length){groceryMarkers.forEach(m=>m.addTo(map));return;}
+  try{
+    const q=`[out:json][timeout:25];(node["shop"="supermarket"](${BBOX});node["shop"="convenience"]["name"~"Bonus|Krónan|Nettó|Hagkaup|10-11|Samkaup",i](${BBOX}););out body;`;
+    const d=await(await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(q)})).json();
+    const known=['bonus','krónan','nettó','hagkaup','kjarval','10-11','samkaup'];
+    d.elements.forEach(el=>{
+      const name=el.tags?.name||el.tags?.brand||'Store';
+      const b=(el.tags?.brand||el.tags?.name||'').toLowerCase();
+      const isK=known.some(k=>b.includes(k));
+      const icon=L.divIcon({html:`<div style="width:12px;height:12px;border-radius:2px;background:${isK?'#d29922':'#888'};border:2px solid #0d1219;font-size:7px;color:#000;font-weight:700;display:flex;align-items:center;justify-content:center">${isK?'B':''}</div>`,className:'',iconAnchor:[6,6]});
+      const m=L.marker([el.lat,el.lon],{icon}).addTo(map);
+      m._name=name;
+      m.on('click',(e)=>{L.DomEvent.stopPropagation(e);openSheet('🛒 '+name,el.tags?.brand||'Grocery store',[{label:'Navigate',url:`https://maps.google.com/?q=${el.lat},${el.lon}`,primary:true}]);});
+      groceryMarkers.push(m);
+    });
+  }catch(e){console.warn('Grocery fetch failed',e);}
+}
+
+/* ── MAP UTILS ───────────────────────────────────────────────── */
+function fitIceland(){map.setView([65.0,-19.0],6);}
+function openSheet(title,sub,actions){
+  document.getElementById('sheet-title').textContent=title;
+  document.getElementById('sheet-sub').textContent=sub;
+  document.getElementById('sheet-actions').innerHTML=actions.map(a=>
+    a.url?`<a href="${a.url}" target="_blank" class="sheet-btn ${a.primary?'sheet-btn-primary':'sheet-btn-secondary'}">${a.label}</a>`
+         :`<button onclick='(${a.cb})()' class="sheet-btn sheet-btn-secondary">${a.label}</button>`
   ).join('');
   document.getElementById('map-sheet').classList.add('open');
 }
-
-function closeSheet() {
-  document.getElementById('map-sheet').classList.remove('open');
+function closeSheet(){document.getElementById('map-sheet').classList.remove('open');}
+function showOnMap(lat,lng,name){
+  switchTab('map',document.querySelector('[data-tab="map"]'));
+  setTimeout(()=>{map.setView([lat,lng],11);openSheet(name,`${lat.toFixed(3)}, ${lng.toFixed(3)}`,[{label:'Navigate',url:`https://maps.google.com/?q=${lat},${lng}`,primary:true}]);},200);
 }
 
-/* ================================================================
-   CAMPSITES LIST
-================================================================ */
-function renderCampsites() {
-  const badgeClass = { Premium:'badge-blue', Basic:'badge-green', NP:'badge-yellow' };
-  document.getElementById('camp-list').innerHTML = CAMPSITES.map((c, i) => `
-    <div class="card">
-      <div class="card-header">
-        <div class="card-icon">⛺</div>
-        <div class="card-body">
-          <div class="card-title">${c.name}</div>
-          <div class="card-sub">${c.note}</div>
-        </div>
-        <div class="card-badge ${badgeClass[c.type] || 'badge-green'}">${c.type}</div>
-      </div>
-      <div class="card-actions">
-        <a href="${c.gmaps}" target="_blank" class="card-action-btn">Navigate</a>
-        <button class="card-action-btn" onclick="showOnMap(${c.lat},${c.lng},'${c.name.replace(/'/g,"\\'")}')">Show on Map</button>
-      </div>
-    </div>
-  `).join('');
+/* ================================================================ WIND MAP */
+function initWindMap(){
+  windMap=L.map('wind-map',{center:[65.0,-19.0],zoom:5,zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,touchZoom:false});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',{maxZoom:10}).addTo(windMap);
+}
+function updateWindMapMarkers(){
+  windMapMarkers.forEach(m=>windMap.removeLayer(m));windMapMarkers=[];
+  STATIONS.forEach(s=>{
+    const d=weatherData[s.id];if(!d)return;
+    const ws=d.wind_speed_10m,r=Math.max(8,Math.min(30,ws*1.4));
+    const icon=L.divIcon({html:`<div style="width:${r*2}px;height:${r*2}px;border-radius:50%;background:${windColor(ws)};opacity:0.75;border:2px solid #0d1219;display:flex;align-items:center;justify-content:center;font-size:${r<12?7:9}px;font-weight:700;color:white">${Math.round(ws)}</div>`,className:'',iconAnchor:[r,r]});
+    windMapMarkers.push(L.marker([s.lat,s.lng],{icon}).addTo(windMap));
+  });
 }
 
-/* ================================================================
-   SIGHTS LIST
-================================================================ */
-function renderSights() {
-  const catColor = { Waterfall:'badge-blue', Glacier:'badge-blue', Beach:'badge-green',
-    Geyser:'badge-yellow', Heritage:'badge-yellow', Nature:'badge-green',
-    Mountain:'badge-green', Canyon:'badge-green', Geothermal:'badge-yellow', 'Hot Spring':'badge-yellow' };
-  document.getElementById('sights-list').innerHTML = SIGHTS.map(s => `
-    <div class="card">
-      <div class="card-header">
-        <div class="card-icon">${s.emoji}</div>
-        <div class="card-body">
-          <div class="card-title">${s.name}</div>
-          <div class="card-sub">${s.desc}</div>
-        </div>
-        <div class="card-badge ${catColor[s.cat] || 'badge-blue'}">${s.cat}</div>
-      </div>
-      <div class="card-actions">
-        <a href="${s.gmaps}" target="_blank" class="card-action-btn">Navigate</a>
-        <button class="card-action-btn" onclick="showOnMap(${s.lat},${s.lng},'${s.name.replace(/'/g,"\\'")}')">Show on Map</button>
-      </div>
-    </div>
-  `).join('');
+/* ================================================================ LISTS */
+function renderCampsites(){
+  const bc={Premium:'badge-blue',Basic:'badge-green',NP:'badge-yellow'};
+  document.getElementById('camp-list').innerHTML=CAMPSITES.map(c=>`
+    <div class="card"><div class="card-header"><div class="card-icon">⛺</div><div class="card-body"><div class="card-title">${c.name}</div><div class="card-sub">${c.note}</div></div><div class="card-badge ${bc[c.type]||'badge-green'}">${c.type}</div></div>
+    <div class="card-actions"><a href="${c.gmaps}" target="_blank" class="card-action-btn">Navigate</a><button class="card-action-btn" onclick="showOnMap(${c.lat},${c.lng},'${c.name.replace(/'/g,"\\'")}')">Map</button></div></div>`).join('');
+}
+function renderSights(){
+  const cc={Waterfall:'badge-blue',Glacier:'badge-blue',Beach:'badge-green',Geyser:'badge-yellow',Heritage:'badge-yellow',Nature:'badge-green',Mountain:'badge-green',Canyon:'badge-green',Geothermal:'badge-yellow','Hot Spring':'badge-yellow'};
+  document.getElementById('sights-list').innerHTML=SIGHTS.map(s=>`
+    <div class="card"><div class="card-header"><div class="card-icon">${s.emoji}</div><div class="card-body"><div class="card-title">${s.name}</div><div class="card-sub">${s.desc}</div></div><div class="card-badge ${cc[s.cat]||'badge-blue'}">${s.cat}</div></div>
+    <div class="card-actions"><a href="${s.gmaps}" target="_blank" class="card-action-btn">Navigate</a><button class="card-action-btn" onclick="showOnMap(${s.lat},${s.lng},'${s.name.replace(/'/g,"\\'")}')">Map</button></div></div>`).join('');
 }
 
-function showOnMap(lat, lng, name) {
-  switchTab('map', document.querySelector('[data-tab="map"]'));
-  setTimeout(() => {
-    map.setView([lat, lng], 11);
-    openSheet(name, `${lat.toFixed(3)}, ${lng.toFixed(3)}`, [
-      { label: 'Navigate', url: `https://maps.google.com/?q=${lat},${lng}`, primary: true }
-    ]);
-  }, 200);
+/* ================================================================ WEATHER */
+function renderStationChips(){
+  document.getElementById('station-chips').innerHTML=STATIONS.map(s=>`<button class="station-chip ${s.id===activeStation?'active':''}" onclick="selectStation('${s.id}')">${s.name}</button>`).join('');
 }
-
-/* ================================================================
-   WEATHER
-================================================================ */
-function renderStationChips() {
-  document.getElementById('station-chips').innerHTML = WEATHER_STATIONS.map(s => `
-    <button class="station-chip ${s.id === activeStation ? 'active' : ''}"
-            onclick="selectStation('${s.id}')">${s.name}</button>
-  `).join('');
+function selectStation(id){activeStation=id;renderStationChips();renderWeatherGrid();}
+async function fetchWeather(){
+  try{
+    const res=await Promise.allSettled(STATIONS.map(s=>fetch(`https://api.open-meteo.com/v1/forecast?latitude=${s.lat}&longitude=${s.lng}&current=temperature_2m,wind_speed_10m,wind_gusts_10m,precipitation,weather_code,relative_humidity_2m&wind_speed_unit=ms&timezone=Atlantic%2FReykjavik`).then(r=>r.json()).then(d=>({id:s.id,data:d.current}))));
+    res.forEach(r=>{if(r.status==='fulfilled')weatherData[r.value.id]=r.value.data;});
+    renderWeatherGrid();updateWindMarkers();updateWindMapMarkers();updateStatusBar();updateTime();
+  }catch(e){console.warn('Weather fail',e);}
 }
-
-function selectStation(id) {
-  activeStation = id;
-  renderStationChips();
-  renderWeatherGrid();
+function renderWeatherGrid(){
+  const d=weatherData[activeStation];if(!d)return;
+  const ws=d.wind_speed_10m,wc=windClass(ws);
+  document.getElementById('weather-grid').innerHTML=`
+    <div class="weather-stat"><div class="weather-stat-label">Temperature</div><div class="weather-stat-value">${Math.round(d.temperature_2m)}<span class="weather-stat-unit">°C</span></div></div>
+    <div class="weather-stat"><div class="weather-stat-label">Wind Speed</div><div class="weather-stat-value ${wc}">${Math.round(ws)}<span class="weather-stat-unit">m/s</span></div></div>
+    <div class="weather-stat"><div class="weather-stat-label">Gusts</div><div class="weather-stat-value ${windClass(d.wind_gusts_10m)}">${Math.round(d.wind_gusts_10m)}<span class="weather-stat-unit">m/s</span></div></div>
+    <div class="weather-stat"><div class="weather-stat-label">Precipitation</div><div class="weather-stat-value">${d.precipitation.toFixed(1)}<span class="weather-stat-unit">mm</span></div></div>
+    <div class="weather-stat"><div class="weather-stat-label">Humidity</div><div class="weather-stat-value">${d.relative_humidity_2m}<span class="weather-stat-unit">%</span></div></div>
+    <div class="weather-stat"><div class="weather-stat-label">Condition</div><div class="weather-stat-value" style="font-size:22px">${wmoIcon(d.weather_code)}</div></div>`;
 }
-
-async function fetchWeather() {
-  try {
-    // Use Open-Meteo for each station (free, no key needed)
-    const promises = WEATHER_STATIONS.map(s =>
-      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${s.lat}&longitude=${s.lng}&current=temperature_2m,wind_speed_10m,wind_gusts_10m,precipitation,weather_code,relative_humidity_2m&wind_speed_unit=ms&timezone=Atlantic%2FReykjavik`)
-        .then(r => r.json())
-        .then(d => ({ id: s.id, data: d.current }))
-    );
-    const results = await Promise.allSettled(promises);
-    results.forEach(r => {
-      if (r.status === 'fulfilled') {
-        weatherData[r.value.id] = r.value.data;
-      }
-    });
-    renderWeatherGrid();
-    updateStatusBar();
-    updateTime();
-  } catch(e) {
-    console.warn('Weather fetch failed', e);
-  }
-}
-
-function renderWeatherGrid() {
-  const d = weatherData[activeStation];
-  if (!d) {
-    document.getElementById('weather-grid').innerHTML =
-      '<div class="loading-state" style="grid-column:1/-1"><div class="spinner"></div>Loading…</div>';
-    return;
-  }
-  const ws = d.wind_speed_10m;
-  const wc = windClass(ws);
-  document.getElementById('weather-grid').innerHTML = `
-    <div class="weather-stat">
-      <div class="weather-stat-label">Temperature</div>
-      <div class="weather-stat-value">${Math.round(d.temperature_2m)}<span class="weather-stat-unit">°C</span></div>
-    </div>
-    <div class="weather-stat">
-      <div class="weather-stat-label">Wind Speed</div>
-      <div class="weather-stat-value ${wc}">${Math.round(ws)}<span class="weather-stat-unit">m/s</span></div>
-    </div>
-    <div class="weather-stat">
-      <div class="weather-stat-label">Gusts</div>
-      <div class="weather-stat-value ${windClass(d.wind_gusts_10m)}">${Math.round(d.wind_gusts_10m)}<span class="weather-stat-unit">m/s</span></div>
-    </div>
-    <div class="weather-stat">
-      <div class="weather-stat-label">Precipitation</div>
-      <div class="weather-stat-value">${d.precipitation.toFixed(1)}<span class="weather-stat-unit">mm</span></div>
-    </div>
-    <div class="weather-stat">
-      <div class="weather-stat-label">Humidity</div>
-      <div class="weather-stat-value">${d.relative_humidity_2m}<span class="weather-stat-unit">%</span></div>
-    </div>
-    <div class="weather-stat">
-      <div class="weather-stat-label">Condition</div>
-      <div class="weather-stat-value" style="font-size:22px">${wmoIcon(d.weather_code)}</div>
-    </div>
-  `;
-  // Update wind markers
-  updateWindMarkers();
-}
-
-function windClass(ms) {
-  if (ms < 8) return 'wind-calm';
-  if (ms < 14) return 'wind-mod';
-  if (ms < 20) return 'wind-strong';
-  return 'wind-storm';
-}
-
-function windColor(ms) {
-  if (ms < 8) return '#3fb950';
-  if (ms < 14) return '#d29922';
-  if (ms < 20) return '#e3622e';
-  return '#f85149';
-}
-
-function wmoIcon(code) {
-  if (code === 0) return '☀️';
-  if (code <= 3) return '⛅';
-  if (code <= 9) return '🌫️';
-  if (code <= 29) return '🌧️';
-  if (code <= 39) return '🌫️';
-  if (code <= 49) return '🌫️';
-  if (code <= 59) return '🌧️';
-  if (code <= 69) return '❄️';
-  if (code <= 79) return '❄️';
-  if (code <= 89) return '⛈️';
-  if (code <= 99) return '⛈️';
-  return '🌡️';
-}
-
-function updateWindMarkers() {
-  windMarkers.forEach(m => map && map.removeLayer(m));
-  windMarkers = [];
-  if (!map) return;
-  WEATHER_STATIONS.forEach(s => {
-    const d = weatherData[s.id];
-    if (!d) return;
-    const ws = d.wind_speed_10m;
-    const color = windColor(ws);
-    const m = L.circleMarker([s.lat, s.lng], {
-      radius: 10, fillColor: color, color: '#0d1117',
-      weight: 1.5, fillOpacity: 0.8
-    });
-    m.bindTooltip(`${s.name}: ${Math.round(ws)} m/s`, { direction:'top', offset:[0,-8] });
-    m.on('click', () => openSheet('💨 ' + s.name, `Wind ${Math.round(ws)} m/s · Gusts ${Math.round(d.wind_gusts_10m)} m/s · ${Math.round(d.temperature_2m)}°C`, []));
-    if (windLayerOn) m.addTo(map);
+function windClass(ms){return ms<8?'wind-calm':ms<14?'wind-mod':ms<20?'wind-strong':'wind-storm';}
+function windColor(ms){return ms<8?'#3fb950':ms<14?'#d29922':ms<20?'#E85D26':'#f85149';}
+function wmoIcon(c){if(c===0)return'☀️';if(c<=3)return'⛅';if(c<=9)return'🌫️';if(c<=59)return'🌧️';if(c<=79)return'❄️';return'⛈️';}
+function updateWindMarkers(){
+  windMarkers.forEach(m=>map&&map.removeLayer(m));windMarkers=[];
+  if(!map)return;
+  STATIONS.forEach(s=>{
+    const d=weatherData[s.id];if(!d)return;
+    const ws=d.wind_speed_10m,r=Math.max(8,Math.min(26,ws*1.3));
+    const icon=L.divIcon({html:`<div style="width:${r*2}px;height:${r*2}px;border-radius:50%;background:${windColor(ws)};opacity:0.7;border:2px solid #0d1219;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:white">${Math.round(ws)}</div>`,className:'',iconAnchor:[r,r]});
+    const m=L.marker([s.lat,s.lng],{icon});
+    m.on('click',(e)=>{L.DomEvent.stopPropagation(e);openSheet('💨 '+s.name,`Wind ${Math.round(ws)} m/s · Gusts ${Math.round(d.wind_gusts_10m)} m/s · ${Math.round(d.temperature_2m)}°C`,[]);});
+    if(layers.wind)m.addTo(map);
     windMarkers.push(m);
   });
 }
 
-/* ================================================================
-   ROADS
-================================================================ */
-async function fetchRoads() {
-  try {
-    const res = await fetch('/api/roads');
-    const text = await res.text();
-    parseAndRenderRoads(text);
-  } catch(e) {
-    renderRoadsError();
-  }
+/* ================================================================ ROADS */
+async function fetchRoads(){
+  try{const t=await(await fetch('/api/roads')).text();parseRoads(t);}
+  catch(e){setRoadStatus(false,false);}
 }
-
-function parseAndRenderRoads(xml) {
-  const el = document.getElementById('roads-list');
-  try {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(xml, 'text/xml');
-    const items = doc.querySelectorAll('item');
-    if (!items.length) {
-      el.innerHTML = '<div class="empty-state"><div class="icon">✅</div>No active road alerts — all clear!</div>';
-      updateRoadStatus(false);
-      return;
-    }
-    let hasWarning = false, hasClosed = false;
-    const html = Array.from(items).map(item => {
-      const title = item.querySelector('title')?.textContent || 'Alert';
-      const desc = item.querySelector('description')?.textContent || '';
-      const pubDate = item.querySelector('pubDate')?.textContent || '';
-      let severity = 'info';
-      const t = title.toLowerCase();
-      if (t.includes('closed') || t.includes('lokað')) { severity = 'closed'; hasClosed = true; }
-      else if (t.includes('warning') || t.includes('viðvörun') || t.includes('slippery') || t.includes('icy')) { severity = 'warning'; hasWarning = true; }
-      const date = pubDate ? new Date(pubDate).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) : '';
-      return `
-        <div class="alert-banner ${severity}">
-          <div class="alert-title">${title}</div>
-          <div class="alert-desc">${desc.replace(/<[^>]*>/g,'').substring(0,200)}</div>
-          ${date ? `<div class="alert-meta">Updated ${date}</div>` : ''}
-        </div>
-      `;
+function parseRoads(xml){
+  try{
+    const doc=new DOMParser().parseFromString(xml,'text/xml');
+    const items=doc.querySelectorAll('item');
+    let closed=false,warn=false;
+    items.forEach(i=>{const t=(i.querySelector('title')?.textContent||'').toLowerCase();if(t.includes('closed')||t.includes('lokað'))closed=true;else if(t.includes('warning')||t.includes('slippery')||t.includes('icy'))warn=true;});
+    setRoadStatus(closed,warn);
+    parseRegionalAlerts(xml);
+  }catch(e){setRoadStatus(false,false);}
+}
+function setRoadStatus(closed,warn){
+  [['road-dot','road-label'],['road-dot2','road-label2']].forEach(([dotId,labId])=>{
+    const dot=document.getElementById(dotId),lab=document.getElementById(labId);
+    if(!dot||!lab)return;
+    if(closed){dot.className='dot danger';lab.textContent='Closures';}
+    else if(warn){dot.className='dot warn';lab.textContent='Warnings';}
+    else{dot.className='dot';lab.textContent='Roads OK';}
+  });
+}
+function parseRegionalAlerts(xml){
+  try{
+    const doc=new DOMParser().parseFromString(xml,'text/xml');
+    const items=Array.from(doc.querySelectorAll('item'));
+    const rs={};REGIONS.forEach(r=>{rs[r.key]={sev:'clear',text:''};});
+    items.forEach(item=>{
+      const title=item.querySelector('title')?.textContent||'';
+      const full=(title+' '+(item.querySelector('description')?.textContent||'')).toLowerCase();
+      REGIONS.forEach(r=>{
+        if(r.keywords.some(k=>full.includes(k))){
+          const sev=full.includes('closed')||full.includes('lokað')?'danger':full.includes('warning')||full.includes('wind')||full.includes('snow')||full.includes('icy')||full.includes('avalanche')?'warning':'clear';
+          if(sev==='danger'||(sev==='warning'&&rs[r.key].sev==='clear')){rs[r.key].sev=sev;}
+          if(title&&!rs[r.key].text)rs[r.key].text=title.substring(0,120);
+        }
+      });
+    });
+    document.getElementById('regional-alerts').innerHTML=REGIONS.map(r=>{
+      const s=rs[r.key];
+      const em=s.sev==='danger'?'🔴':s.sev==='warning'?'🟡':'🟢';
+      return`<div class="region-alert ${s.sev}"><div class="region-alert-name">${em} ${r.name}</div><div class="region-alert-desc">${s.text||'No active alerts'}</div></div>`;
     }).join('');
-    el.innerHTML = html;
-    updateRoadStatus(hasClosed, hasWarning);
-  } catch(e) {
-    renderRoadsError();
-  }
+  }catch(e){document.getElementById('regional-alerts').innerHTML='<div class="empty-state"><div class="icon">📡</div>Could not load alerts</div>';}
 }
 
-function renderRoadsError() {
-  document.getElementById('roads-list').innerHTML =
-    '<div class="empty-state"><div class="icon">📡</div>Could not fetch road alerts.<br>Check safetravel.is directly.</div>';
+/* ================================================================ STATUS */
+function updateStatusBar(){
+  let mx=0;Object.values(weatherData).forEach(d=>{if(d?.wind_speed_10m>mx)mx=d.wind_speed_10m;});
+  const wc=windClass(mx);
+  const dot=document.getElementById('wind-dot'),lab=document.getElementById('wind-label');
+  dot.className='dot'+(wc==='wind-calm'?'':wc==='wind-mod'?' warn':' danger');
+  lab.textContent=`${Math.round(mx)} m/s`;
 }
+function updateTime(){document.getElementById('last-updated').textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});}
 
-function updateRoadStatus(closed, warning) {
-  const dot = document.getElementById('road-dot');
-  const label = document.getElementById('road-label');
-  if (closed) { dot.className = 'dot danger'; label.textContent = 'Closures'; }
-  else if (warning) { dot.className = 'dot warn'; label.textContent = 'Warnings'; }
-  else { dot.className = 'dot'; label.textContent = 'Roads OK'; }
-}
-
-/* ================================================================
-   STATUS BAR
-================================================================ */
-function updateStatusBar() {
-  // Find max wind across all fetched stations
-  let maxWind = 0;
-  Object.values(weatherData).forEach(d => {
-    if (d && d.wind_speed_10m > maxWind) maxWind = d.wind_speed_10m;
-  });
-  const dot = document.getElementById('wind-dot');
-  const label = document.getElementById('wind-label');
-  const wc = windClass(maxWind);
-  dot.className = 'dot' + (wc === 'wind-calm' ? '' : wc === 'wind-mod' ? ' warn' : ' danger');
-  label.textContent = `${Math.round(maxWind)} m/s`;
-}
-
-function updateTime() {
-  document.getElementById('last-updated').textContent =
-    new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-}
-
-/* ================================================================
-   PWA + INSTALL
-================================================================ */
-function setupPWA() {
-  window.addEventListener('beforeinstallprompt', e => {
-    e.preventDefault();
-    deferredPrompt = e;
-    setTimeout(() => document.getElementById('install-banner').classList.add('show'), 3000);
-  });
-}
-
-function doInstall() {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
-  }
-  dismissInstall();
-}
-
-function dismissInstall() {
-  document.getElementById('install-banner').classList.remove('show');
-}
-
-/* ================================================================
-   OFFLINE
-================================================================ */
-function setupOfflineDetection() {
-  const toast = document.getElementById('offline-toast');
-  window.addEventListener('offline', () => toast.classList.add('show'));
-  window.addEventListener('online', () => setTimeout(() => toast.classList.remove('show'), 2000));
-  if (!navigator.onLine) toast.classList.add('show');
-}
-
-/* ================================================================
-   SERVICE WORKER (register)
-================================================================ */
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
-  });
-}
+/* ================================================================ PWA */
+function setupPWA(){window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;setTimeout(()=>document.getElementById('install-banner').classList.add('show'),3000);});}
+function doInstall(){if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>deferredPrompt=null);}dismissInstall();}
+function dismissInstall(){document.getElementById('install-banner').classList.remove('show');}
+function setupOfflineDetection(){const t=document.getElementById('offline-toast');window.addEventListener('offline',()=>t.classList.add('show'));window.addEventListener('online',()=>setTimeout(()=>t.classList.remove('show'),2000));if(!navigator.onLine)t.classList.add('show');}
+if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 </script>
 </body>
 </html>
