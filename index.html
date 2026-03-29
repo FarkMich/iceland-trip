@@ -167,19 +167,34 @@
     #panel-roads{display:none;flex-direction:column}
     #panel-roads.active{display:flex}
     .roads-bar{flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--border);
-      padding:10px 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+      padding:10px 16px;display:flex;gap:8px;align-items:center}
     .roads-link{padding:6px 12px;border-radius:20px;font-size:11px;font-weight:700;
-      background:var(--surface2);border:1px solid var(--border);color:var(--ice);transition:background .15s}
-    .roads-link:active{background:var(--ice-dim)}
+      background:var(--surface2);border:1px solid var(--border);color:var(--ice);white-space:nowrap}
     .roads-link.em{color:var(--red)!important;border-color:var(--red)!important}
-    #roads-map-wrap{flex:1;min-height:0;position:relative}
-    #roads-map{height:100%}
-    #roads-legend{position:absolute;bottom:16px;left:12px;z-index:1000;background:var(--surface);
-      border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;
-      box-shadow:0 4px 12px rgba(0,0,0,.4);font-size:11px}
-    .rl-title{font-weight:700;color:var(--text-dim);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;font-size:10px}
-    .rl-row{display:flex;align-items:center;gap:6px;margin-bottom:4px;color:var(--text-muted)}
-    .rl-line{width:22px;height:4px;border-radius:2px;flex-shrink:0}
+    .roads-chips{flex-shrink:0;display:flex;gap:6px;padding:10px 12px 6px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--border)}
+    .roads-chips::-webkit-scrollbar{display:none}
+    .roads-chip{flex-shrink:0;padding:5px 13px;border-radius:20px;font-size:11px;font-weight:700;
+      background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);transition:all .15s}
+    .roads-chip.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    .road-card{margin:6px 12px;padding:12px 14px;border-radius:var(--radius-sm);border-left:4px solid;background:var(--surface)}
+    .road-card.cat-A{border-color:var(--green);background:rgba(63,185,80,.06)}
+    .road-card.cat-B{border-color:var(--yellow);background:rgba(210,153,34,.08)}
+    .road-card.cat-C{border-color:var(--yellow);background:rgba(210,153,34,.08)}
+    .road-card.cat-D{border-color:var(--red);background:rgba(248,81,73,.08)}
+    .road-card.cat-E{border-color:var(--yellow);background:rgba(210,153,34,.08)}
+    .road-card.cat-F{border-color:var(--orange);background:rgba(232,93,38,.08)}
+    .road-card.cat-G{border-color:var(--orange);background:rgba(232,93,38,.08)}
+    .road-card.cat-H{border-color:var(--red);background:rgba(248,81,73,.08)}
+    .road-card.cat-J,.road-card.cat-K,.road-card.cat-L{border-color:var(--red);background:rgba(248,81,73,.1)}
+    .road-card.cat-0{border-color:var(--border);background:var(--surface)}
+    .rc-title{font-size:13px;font-weight:700;color:var(--text)}
+    .rc-desc{font-size:12px;color:var(--text-muted);margin-top:3px}
+    .rc-meta{font-size:11px;color:var(--text-dim);margin-top:5px}
+    .rc-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle}
+    .roads-section-header{padding:10px 14px 4px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim)}
+    .all-clear{text-align:center;padding:40px 20px}
+    .all-clear .icon{font-size:40px;margin-bottom:10px}
+    .all-clear p{font-size:14px;color:var(--text-muted)}
 
     /* ── MISC ── */
     .loading-state{display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -194,11 +209,6 @@
     #install-banner.show{transform:translateY(0)}
     #install-btn{padding:8px 14px;background:var(--accent);color:#fff;border-radius:var(--radius-sm);font-size:13px;font-weight:700;flex-shrink:0}
     #install-dismiss{padding:8px;color:var(--text-dim);font-size:20px}
-    #offline-toast{position:fixed;top:calc(var(--safe-top)+8px);left:50%;
-      transform:translateX(-50%) translateY(-80px);background:var(--yellow);color:#0d1117;
-      font-size:13px;font-weight:700;padding:8px 18px;border-radius:20px;z-index:9999;
-      transition:transform .3s;white-space:nowrap}
-    #offline-toast.show{transform:translateX(-50%) translateY(0)}
     @media(min-width:640px){.nav-btn{max-width:120px}}
   </style>
 </head>
@@ -279,20 +289,18 @@
     <!-- ══ ROADS ════════════════════════════════════════════════ -->
     <div class="tab-panel" id="panel-roads">
       <div class="roads-bar">
-        <a class="roads-link" href="https://umferdin.is/en" target="_blank">umferdin.is</a>
-        <a class="roads-link" href="https://vedur.is" target="_blank">vedur.is</a>
-        <a class="roads-link" href="https://safetravel.is" target="_blank">safetravel.is</a>
+        <div id="roads-updated" style="font-size:11px;color:var(--text-dim);flex:1">Loading…</div>
+        <a class="roads-link" href="https://umferdin.is/en" target="_blank">umferdin.is ↗</a>
         <a class="roads-link em" href="tel:112">📞 112</a>
       </div>
-      <div id="roads-map-wrap">
-        <div id="roads-map"></div>
-        <div id="roads-legend">
-          <div class="rl-title">Road conditions</div>
-          <div class="rl-row"><div class="rl-line" style="background:#3fb950"></div>Clear / good</div>
-          <div class="rl-row"><div class="rl-line" style="background:#d29922"></div>Caution / slippery</div>
-          <div class="rl-row"><div class="rl-line" style="background:#f85149"></div>Closed / danger</div>
-          <div class="rl-row"><div class="rl-line" style="background:#4a6080;border:1px dashed #7EC8E3"></div>Condition unknown</div>
-        </div>
+      <!-- Filter chips -->
+      <div class="roads-chips" id="roads-chips">
+        <button class="roads-chip active" onclick="filterRoads('all',this)">All</button>
+        <button class="roads-chip" onclick="filterRoads('ring',this)">🔵 Ring Road</button>
+        <button class="roads-chip" onclick="filterRoads('bad',this)">⚠️ Alerts only</button>
+      </div>
+      <div class="panel-scroll" id="roads-list">
+        <div class="loading-state"><div class="spinner"></div>Fetching road conditions…</div>
       </div>
     </div>
 
@@ -320,7 +328,7 @@
   <button id="install-btn" onclick="doInstall()">Install</button>
   <button id="install-dismiss" onclick="dismissInstall()">×</button>
 </div>
-<div id="offline-toast">⚡ No connection — cached data shown</div>
+
 
 <script>
 /* ================================================================ DATA */
@@ -396,7 +404,7 @@ const STATIONS=[
 const ICELAND_BOUNDS=L.latLngBounds([[62.0,-26.0],[67.5,-12.5]]);
 
 /* ================================================================ STATE */
-let map,windMap,roadsMap;
+let map,windMap;
 let layers={camps:true,sights:true,wind:true,petrol:false,grocery:false};
 let weatherData={};
 let campMarkers={},sightMarkers={},windMarkers=[],windMapMarkers=[];
@@ -412,7 +420,6 @@ let deferredPrompt=null;
 document.addEventListener('DOMContentLoaded',()=>{
   initMap();
   initWindMap();
-  initRoadsMap();
   renderWeatherChips();
   fetchWeather();
   fetchRoads();
@@ -428,7 +435,6 @@ function switchTab(id,btn){
   btn.classList.add('active');
   if(id==='map')setTimeout(()=>map&&map.invalidateSize(),100);
   if(id==='weather')setTimeout(()=>windMap&&windMap.invalidateSize(),150);
-  if(id==='roads')setTimeout(()=>roadsMap&&roadsMap.invalidateSize(),100);
 }
 
 /* ================================================================ MAIN MAP */
@@ -711,10 +717,15 @@ async function fetchPetrol(){
 }
 async function fetchGrocery(){
   if(groceryMarkers.length){groceryMarkers.forEach(m=>m.addTo(map));return;}
+  const btn=document.getElementById('btn-grocery');
+  btn.textContent='🛒 Loading…';
   try{
     const known=['bonus','krónan','nettó','hagkaup','kjarval','10-11','samkaup'];
-    const q=`[out:json][timeout:25];(node["shop"="supermarket"](${BBOX});node["shop"="convenience"]["name"~"Bonus|Krónan|Nettó|Hagkaup|10-11|Samkaup",i](${BBOX}););out body;`;
-    const d=await(await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(q)})).json();
+    const q=`[out:json][timeout:30];(node["shop"="supermarket"](${BBOX});node["shop"="convenience"]["name"~"Bonus|Krona|Netto|Hagkaup|10-11|Samkaup",i](${BBOX}););out body;`;
+    const res=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(q)});
+    if(!res.ok)throw new Error('Overpass error '+res.status);
+    const d=await res.json();
+    if(!d.elements?.length){btn.textContent='🛒 Stores';return;}
     d.elements.forEach(el=>{
       const name=el.tags?.name||el.tags?.brand||'Store';
       const b=(el.tags?.brand||el.tags?.name||'').toLowerCase();
@@ -728,7 +739,13 @@ async function fetchGrocery(){
       });
       groceryMarkers.push(m);
     });
-  }catch(e){console.warn('Grocery fail',e);}
+    btn.textContent=`🛒 Stores (${d.elements.length})`;
+  }catch(e){
+    console.warn('Grocery fail',e);
+    btn.textContent='🛒 Failed';
+    layers.grocery=false;btn.classList.remove('on');
+    setTimeout(()=>btn.textContent='🛒 Stores',3000);
+  }
 }
 
 function fitIceland(){map.fitBounds(ICELAND_BOUNDS);}
@@ -814,86 +831,132 @@ function windColor(ms){return ms<8?'#3fb950':ms<14?'#d29922':ms<20?'#E85D26':'#f
 function wmoIcon(c){if(c===0)return'☀️';if(c<=3)return'⛅';if(c<=9)return'🌫️';if(c<=59)return'🌧️';if(c<=79)return'❄️';return'⛈️';}
 function windClass(ms){return ms<8?'wind-calm':ms<14?'wind-mod':ms<20?'wind-strong':'wind-storm';}
 
-/* ================================================================ ROADS MAP */
-// Road segments with approximate coordinates and condition status (from safetravel RSS)
-const ROAD_SEGMENTS=[
-  {name:'Reykjavík – Selfoss',coords:[[64.14,-21.90],[63.93,-21.00]],cond:'unknown'},
-  {name:'Selfoss – Vík',coords:[[63.93,-21.00],[63.42,-19.01]],cond:'unknown'},
-  {name:'Vík – Kirkjubæjarklaustur',coords:[[63.42,-19.01],[63.79,-18.06]],cond:'unknown'},
-  {name:'Kirkjubæjarklaustur – Skaftafell',coords:[[63.79,-18.06],[63.996,-16.969]],cond:'unknown'},
-  {name:'Skaftafell – Höfn',coords:[[63.996,-16.969],[64.25,-15.21]],cond:'unknown'},
-  {name:'Höfn – Djúpivogur',coords:[[64.25,-15.21],[64.66,-14.29]],cond:'unknown'},
-  {name:'Djúpivogur – Egilsstaðir',coords:[[64.66,-14.29],[65.28,-14.39]],cond:'unknown'},
-  {name:'Egilsstaðir – Þórshöfn',coords:[[65.28,-14.39],[66.20,-15.33]],cond:'unknown'},
-  {name:'Þórshöfn – Húsavík',coords:[[66.20,-15.33],[66.04,-17.34]],cond:'unknown'},
-  {name:'Húsavík – Akureyri',coords:[[66.04,-17.34],[65.68,-18.11]],cond:'unknown'},
-  {name:'Akureyri – Blönduós',coords:[[65.68,-18.11],[65.66,-20.29]],cond:'unknown'},
-  {name:'Blönduós – Borgarnes',coords:[[65.66,-20.29],[64.54,-21.91]],cond:'unknown'},
-  {name:'Borgarnes – Reykjavík',coords:[[64.54,-21.91],[64.14,-21.90]],cond:'unknown'},
-];
-function condColor(c){return c==='closed'?'#f85149':c==='warning'?'#d29922':c==='clear'?'#3fb950':'#4a6080';}
-function condDash(c){return c==='unknown'?'6 4':null;}
+/* ================================================================ ROADS */
+let allRoadSegments = [];
+let roadsFilter = 'all';
 
-let roadSegmentLayers=[];
-function initRoadsMap(){
-  roadsMap=L.map('roads-map',{
-    center:[65.0,-19.0],minZoom:5,maxZoom:12,
-    zoomControl:false,attributionControl:false,
-    maxBounds:ICELAND_BOUNDS,maxBoundsViscosity:0.7,
-  });
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:13}).addTo(roadsMap);
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',{maxZoom:13,opacity:0.4}).addTo(roadsMap);
-  L.control.zoom({position:'bottomright'}).addTo(roadsMap);
-  roadsMap.fitBounds(ICELAND_BOUNDS);
-  drawRoadSegments();
-  // Camp dots for reference
-  CAMPSITES.forEach(c=>{
-    L.circleMarker([c.lat,c.lng],{radius:5,fillColor:'#3fb950',color:'#0d1219',weight:1.5,fillOpacity:0.7}).addTo(roadsMap);
-  });
-}
-function drawRoadSegments(){
-  roadSegmentLayers.forEach(l=>roadsMap.removeLayer(l));roadSegmentLayers=[];
-  ROAD_SEGMENTS.forEach(seg=>{
-    const color=condColor(seg.cond);
-    const opts={color,weight:5,opacity:0.85};
-    if(condDash(seg.cond))opts.dashArray=condDash(seg.cond);
-    const l=L.polyline(seg.coords,opts).addTo(roadsMap);
-    l.bindTooltip(seg.name+' — '+(seg.cond==='unknown'?'checking…':seg.cond),{sticky:true});
-    roadSegmentLayers.push(l);
-  });
-}
-function updateRoadSegments(xml){
-  try{
-    const doc=new DOMParser().parseFromString(xml,'text/xml');
-    const items=Array.from(doc.querySelectorAll('item'));
-    ROAD_SEGMENTS.forEach(seg=>{
-      seg.cond='clear';
-      items.forEach(item=>{
-        const full=((item.querySelector('title')?.textContent||'')+' '+(item.querySelector('description')?.textContent||'')).toLowerCase();
-        const segWords=seg.name.toLowerCase().split(/[\s–-]+/);
-        if(segWords.some(w=>w.length>3&&full.includes(w))){
-          if(full.includes('closed')||full.includes('lokað'))seg.cond='closed';
-          else if((full.includes('warning')||full.includes('slippery')||full.includes('icy')||full.includes('snow'))&&seg.cond!=='closed')seg.cond='warning';
-        }
-      });
-    });
-    drawRoadSegments();
-  }catch(e){}
-}
+const CAT_LABEL = {
+  'A':'Easily passable','B':'Spots of ice','C':'Slippery','D':'Extremely slippery',
+  'E':'Wet snow','F':'Snow','G':'Difficult driving','H':'Difficult road conditions',
+  'J':'Impassable','K':'Impassable','L':'Closed','0':'Unknown'
+};
+const CAT_SEVERITY = {
+  'A':0,'0':0,'B':1,'C':1,'E':1,'F':2,'G':2,'H':2,'D':3,'J':3,'K':3,'L':3
+};
+const CAT_ICON = {
+  'A':'✅','B':'🟡','C':'🟡','D':'🔴','E':'🟡','F':'🟠','G':'🟠','H':'🔴',
+  'J':'🚫','K':'🚫','L':'🚫','0':'⬜'
+};
 
-/* ================================================================ ROADS FETCH */
 async function fetchRoads(){
   try{
-    const t=await(await fetch('/api/roads')).text();
-    updateRoadSegments(t);
-  }catch(e){console.warn('Roads fail',e);}
+    const res = await fetch('/api/road-conditions');
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const json = await res.json();
+    const data = json?.data?.RoadCondition;
+    if(!data) throw new Error('No data');
+
+    allRoadSegments = data.results;
+
+    // Update timestamp
+    const updated = new Date(data.lastUpdate);
+    document.getElementById('roads-updated').textContent =
+      'Updated ' + updated.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+
+    renderRoads();
+  } catch(e) {
+    console.warn('Roads fail', e);
+    document.getElementById('roads-list').innerHTML =
+      '<div class="all-clear"><div class="icon">📡</div><p>Could not load road conditions.<br><a href="https://umferdin.is/en" target="_blank" style="color:var(--ice)">Open umferdin.is ↗</a></p></div>';
+    document.getElementById('roads-updated').textContent = 'Failed to load';
+  }
+}
+
+function filterRoads(f, btn){
+  roadsFilter = f;
+  document.querySelectorAll('.roads-chip').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderRoads();
+}
+
+function renderRoads(){
+  let segs = allRoadSegments;
+
+  // Apply filter
+  if(roadsFilter === 'ring'){
+    segs = segs.filter(r => r.roads?.some(x => x.nr === '1'));
+  } else if(roadsFilter === 'bad'){
+    segs = segs.filter(r => CAT_SEVERITY[r.condition.category] >= 1);
+  }
+
+  // Sort: worst first, then by name
+  segs = [...segs].sort((a,b) => {
+    const sd = CAT_SEVERITY[b.condition.category] - CAT_SEVERITY[a.condition.category];
+    return sd !== 0 ? sd : a.name.localeCompare(b.name);
+  });
+
+  // Skip "Not known" segments in "Alerts only" view
+  if(roadsFilter === 'bad'){
+    segs = segs.filter(r => r.condition.category !== '0');
+  }
+
+  if(!segs.length){
+    document.getElementById('roads-list').innerHTML =
+      '<div class="all-clear"><div class="icon">✅</div><p>No issues on the Ring Road — all clear.</p></div>';
+    return;
+  }
+
+  // Group by severity
+  const closed   = segs.filter(r => ['L','J','K'].includes(r.condition.category));
+  const bad      = segs.filter(r => ['D','G','H'].includes(r.condition.category));
+  const caution  = segs.filter(r => ['B','C','E','F'].includes(r.condition.category));
+  const clear    = segs.filter(r => r.condition.category === 'A');
+  const unknown  = segs.filter(r => r.condition.category === '0');
+
+  let html = '';
+
+  if(closed.length){
+    html += `<div class="roads-section-header">🚫 Closed / Impassable (${closed.length})</div>`;
+    html += closed.map(r=>roadCard(r)).join('');
+  }
+  if(bad.length){
+    html += `<div class="roads-section-header">🔴 Difficult conditions (${bad.length})</div>`;
+    html += bad.map(r=>roadCard(r)).join('');
+  }
+  if(caution.length){
+    html += `<div class="roads-section-header">🟡 Caution (${caution.length})</div>`;
+    html += caution.map(r=>roadCard(r)).join('');
+  }
+  if(clear.length && roadsFilter !== 'bad'){
+    html += `<div class="roads-section-header">✅ Clear (${clear.length})</div>`;
+    html += clear.map(r=>roadCard(r)).join('');
+  }
+  if(unknown.length && roadsFilter === 'all'){
+    html += `<div class="roads-section-header">⬜ Unknown (${unknown.length})</div>`;
+    html += unknown.map(r=>roadCard(r)).join('');
+  }
+
+  document.getElementById('roads-list').innerHTML = html;
+}
+
+function roadCard(r){
+  const cat = r.condition.category;
+  const routes = r.roads?.map(x=>'Rt '+x.nr).join(' · ') || '';
+  const time = r.condition.date
+    ? new Date(r.condition.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})
+    : '';
+  return `<div class="road-card cat-${cat}">
+    <div class="rc-title">${r.name}<span class="rc-badge" style="background:rgba(255,255,255,0.08);color:var(--text-muted)">${routes}</span></div>
+    <div class="rc-desc">${CAT_ICON[cat]||''} ${CAT_LABEL[cat]||cat}</div>
+    ${time?`<div class="rc-meta">Updated ${time}</div>`:''}
+  </div>`;
 }
 
 /* ================================================================ PWA */
 function setupPWA(){window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;setTimeout(()=>document.getElementById('install-banner').classList.add('show'),4000);});}
 function doInstall(){if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>deferredPrompt=null);}dismissInstall();}
 function dismissInstall(){document.getElementById('install-banner').classList.remove('show');}
-function setupOfflineDetection(){const t=document.getElementById('offline-toast');window.addEventListener('offline',()=>t.classList.add('show'));window.addEventListener('online',()=>setTimeout(()=>t.classList.remove('show'),2000));if(!navigator.onLine)t.classList.add('show');}
+function setupOfflineDetection(){}
 if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 </script>
 </body>
