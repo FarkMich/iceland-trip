@@ -855,7 +855,11 @@ async function fetchRoads(){
   try{
     // Call umferdin.is GraphQL directly — works from browser, no proxy needed
     const res = await fetch(ROAD_GQL, {
-      headers: { 'Accept': 'application/json' }
+      headers: {
+        'Accept': 'application/json',
+        'Apollo-Require-Preflight': 'true',
+        'Content-Type': 'application/json',
+      }
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
     const json = await res.json();
