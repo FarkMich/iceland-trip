@@ -168,6 +168,33 @@
     #install-dismiss{padding:8px;color:var(--text-dim);font-size:20px}
     #offline-toast{position:fixed;top:calc(var(--safe-top) + var(--status-h) + 8px);left:50%;transform:translateX(-50%) translateY(-80px);background:var(--yellow);color:#0d1117;font-size:13px;font-weight:700;padding:8px 18px;border-radius:20px;z-index:9999;transition:transform .3s;white-space:nowrap}
     #offline-toast.show{transform:translateX(-50%) translateY(0)}
+    /* CAMPS TAB */
+    #panel-campsites{display:none;flex-direction:column}
+    #panel-campsites.active{display:flex}
+    .camp-chip-bar{flex-shrink:0;display:flex;gap:8px;padding:12px 12px 8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;border-bottom:1px solid var(--border)}
+    .camp-chip-bar::-webkit-scrollbar{display:none}
+    .camp-chip{flex-shrink:0;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);transition:all .15s;cursor:pointer}
+    .camp-chip.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+    #camp-detail-area{flex-shrink:0;overflow-y:auto;max-height:44%}
+    .camp-detail{padding:14px 16px}
+    .camp-detail-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}
+    .camp-detail-name{font-size:17px;font-weight:700;color:var(--text)}
+    .camp-detail-type{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;flex-shrink:0}
+    .camp-detail-desc{font-size:13px;color:var(--text-muted);margin-bottom:12px;line-height:1.5}
+    .camp-facilities{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+    .camp-facility{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--surface2);border:1px solid var(--border);color:var(--text-muted)}
+    .camp-reviews{margin-bottom:14px}
+    .camp-review-title{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px}
+    .camp-review-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px}
+    .camp-review-stars{color:var(--yellow);font-size:12px;margin-bottom:3px}
+    .camp-review-text{font-size:12px;color:var(--text-muted);line-height:1.5}
+    .camp-detail-actions{display:flex;gap:8px}
+    .camp-action-btn{flex:1;padding:12px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;text-align:center;transition:opacity .15s}
+    .camp-action-btn:active{opacity:.7}
+    .camp-action-primary{background:var(--accent);color:#fff}
+    .camp-action-secondary{background:var(--surface2);color:var(--ice);border:1px solid var(--border)}
+    #camp-map-wrap{flex:1;min-height:0;border-top:1px solid var(--border)}
+    #camp-map{height:100%}
     @media(min-width:640px){.nav-btn{max-width:100px}.weather-grid{grid-template-columns:repeat(4,1fr)}}
   </style>
 </head>
@@ -231,8 +258,15 @@
 
     <!-- CAMPS -->
     <div class="tab-panel" id="panel-campsites">
-      <div class="panel-header">23 Year-Round Campsites</div>
-      <div class="panel-scroll" id="camp-list"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>
+      <div class="camp-chip-bar" id="camp-chip-bar"></div>
+      <div id="camp-detail-area">
+        <div class="camp-detail" id="camp-detail">
+          <div class="empty-state"><div class="icon">⛺</div>Select a campsite above</div>
+        </div>
+      </div>
+      <div id="camp-map-wrap">
+        <div id="camp-map"></div>
+      </div>
     </div>
 
     <!-- SIGHTS -->
@@ -271,7 +305,7 @@
         </div>
       </div>
       <div id="roads-iframe-wrap">
-        <iframe id="roads-iframe" src="https://umferdin.is/en" title="Iceland road conditions" loading="lazy" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
+        <iframe id="roads-iframe" src="/api/roads-map" title="Iceland road conditions" loading="lazy"></iframe>
       </div>
     </div>
   </div>
@@ -386,7 +420,7 @@ let deferredPrompt=null;
 /* ================================================================ INIT */
 document.addEventListener('DOMContentLoaded',()=>{
   initMap(); initWindMap();
-  renderCampsites(); renderSights(); renderStationChips();
+  renderCampsiteChips(); renderSights(); renderStationChips();
   fetchWeather(); fetchRoads();
   setInterval(()=>{fetchWeather();fetchRoads();},5*60*1000);
   setupPWA(); setupOfflineDetection();
@@ -401,6 +435,7 @@ function switchTab(id,btn){
   btn.classList.add('active');
   if(id==='map')setTimeout(()=>{map&&map.invalidateSize();},100);
   if(id==='weather')setTimeout(()=>{windMap&&windMap.invalidateSize();},100);
+  if(id==='campsites')setTimeout(()=>{campMap&&campMap.invalidateSize();},100);
 }
 
 /* ================================================================ MAIN MAP */
@@ -652,12 +687,95 @@ function updateWindMapMarkers(){
   });
 }
 
-/* ================================================================ LISTS */
-function renderCampsites(){
-  const bc={Premium:'badge-blue',Basic:'badge-green',NP:'badge-yellow'};
-  document.getElementById('camp-list').innerHTML=CAMPSITES.map(c=>`
-    <div class="card"><div class="card-header"><div class="card-icon">⛺</div><div class="card-body"><div class="card-title">${c.name}</div><div class="card-sub">${c.note}</div></div><div class="card-badge ${bc[c.type]||'badge-green'}">${c.type}</div></div>
-    <div class="card-actions"><a href="${c.gmaps}" target="_blank" class="card-action-btn">Navigate</a><button class="card-action-btn" onclick="showOnMap(${c.lat},${c.lng},'${c.name.replace(/'/g,"\\'")}')">Map</button></div></div>`).join('');
+/* ================================================================ CAMPS TAB */
+const CAMP_DATA = {
+  'Reykjavík – Laugardalur': { facilities:['Hot tubs','Showers','Electricity','WiFi','Kitchen','Laundry'], rating:4.4, reviews:[{stars:5,text:'Best urban camp in Iceland. Hot tub after a long drive is a game changer.'},{stars:4,text:'Close to the city, good facilities. Can get crowded in summer.'}], website:'https://www.reykjavik.is/laugardalur' },
+  'Selfoss – Árból': { facilities:['Showers','Toilets','Kitchen','WiFi'], rating:4.1, reviews:[{stars:4,text:'Clean and well maintained. Good base for Golden Circle.'},{stars:4,text:'Nice riverside location. Staff very helpful.'}], website:null },
+  'Vík – Norður-Vík': { facilities:['Showers','Electricity','WiFi','Laundry'], rating:4.5, reviews:[{stars:5,text:'Amazing black beach 5 min walk away. Views are unreal.'},{stars:4,text:'Can be windy but that is just Iceland. Great location.'}], website:'https://www.vik.is' },
+  'Skaftafell – Vatnajökull NP': { facilities:['Showers','Toilets','Shop','Ranger station'], rating:4.6, reviews:[{stars:5,text:'Best campsite in Iceland. Glacier hikes start right here.'},{stars:5,text:'Stunning setting under Vatnajökull. Book ahead.'}], website:'https://www.vatnajokulsthjodgardur.is' },
+  'Höfn – Hamrar': { facilities:['Showers','Electricity','WiFi','Kitchen'], rating:4.2, reviews:[{stars:4,text:'Great base for Jökulsárlón. Town has a good lobster restaurant.'},{stars:4,text:'Clean facilities, helpful staff.'}], website:null },
+  'Djúpivogur': { facilities:['Showers','Toilets','WiFi'], rating:3.9, reviews:[{stars:4,text:'Quiet and remote. Perfect if you want peace.'},{stars:3,text:'Basic but fine for a night.'}], website:null },
+  'Egilsstaðir – Lyngholt': { facilities:['Showers','Electricity','WiFi','Kitchen','Laundry'], rating:4.3, reviews:[{stars:5,text:'Best in the east. Hot showers and a proper kitchen.'},{stars:4,text:'Good facilities, central for east fjords exploration.'}], website:null },
+  'Seyðisfjörður': { facilities:['Showers','Toilets','WiFi'], rating:4.2, reviews:[{stars:4,text:'Beautiful fjord setting. The town itself is worth a day.'},{stars:4,text:'Very atmospheric, especially if the ferry comes in.'}], website:null },
+  'Þórshöfn': { facilities:['Showers','Toilets'], rating:3.8, reviews:[{stars:4,text:'Remote and quiet. Far from everything in the best way.'},{stars:3,text:'Basic facilities but clean.'}], website:null },
+  'Húsavík': { facilities:['Showers','Electricity','WiFi','Kitchen'], rating:4.4, reviews:[{stars:5,text:'Great base for whale watching. Friendly staff.'},{stars:4,text:'Clean modern facilities. Town has great fish restaurants.'}], website:null },
+  'Goðafoss – Fosshóll': { facilities:['Showers','Electricity','WiFi','Restaurant'], rating:4.3, reviews:[{stars:5,text:'5 minute walk to Goðafoss. Perfect location.'},{stars:4,text:'Restaurant on site is handy after a long drive.'}], website:null },
+  'Akureyri – Hamrar': { facilities:['Showers','Electricity','WiFi','Kitchen','Laundry','Pool access'], rating:4.5, reviews:[{stars:5,text:'Best campsite in the north. City facilities with nature views.'},{stars:5,text:'Spotless. Great access to Akureyri town.'}], website:null },
+  'Hvammstangi': { facilities:['Showers','Toilets','WiFi'], rating:3.9, reviews:[{stars:4,text:'Quiet spot, seal centre nearby is worth it.'},{stars:3,text:'Basic but perfectly fine.'}], website:null },
+  'Borgarnes – Brautarholt': { facilities:['Showers','Electricity','WiFi'], rating:4.0, reviews:[{stars:4,text:'Good stop between Reykjavík and the west.'},{stars:4,text:'Clean and simple. Settlement centre in town is excellent.'}], website:null },
+  'Ísafjörður': { facilities:['Showers','Electricity','WiFi','Kitchen'], rating:4.4, reviews:[{stars:5,text:'Best base for Westfjords. Town is charming.'},{stars:4,text:'Good facilities, dramatic scenery.'}], website:null },
+  'Snæfellsnes – Hellissandur': { facilities:['Showers','Toilets','WiFi'], rating:4.1, reviews:[{stars:4,text:'Great for exploring the peninsula. Glacier views.'},{stars:4,text:'Quiet and well kept.'}], website:null },
+  'Grundarfjörður': { facilities:['Showers','Electricity','WiFi'], rating:4.3, reviews:[{stars:5,text:'Kirkjufell is right there. Best views in Iceland.'},{stars:4,text:'Small but perfectly located.'}], website:null },
+  'Stykishólmur': { facilities:['Showers','Electricity','WiFi','Kitchen'], rating:4.1, reviews:[{stars:4,text:'Charming town. Good base for Snæfellsnes.'},{stars:4,text:'Clean and friendly.'}], website:null },
+  'Flúðir': { facilities:['Showers','Electricity','WiFi'], rating:3.9, reviews:[{stars:4,text:'Secret Lagoon nearby is much better than Blue Lagoon.'},{stars:3,text:'Basic, but location is the draw.'}], website:null },
+  'Þórsmörk – Húsadalur': { facilities:['Showers','Toilets','Restaurant','Hut rental'], rating:4.7, reviews:[{stars:5,text:'Most dramatic campsite in Iceland. Surrounded by glaciers.'},{stars:5,text:'Need a 4WD to get here but completely worth it.'}], website:'https://www.utivist.is' },
+  'Kirkjubæjarklaustur': { facilities:['Showers','Electricity','WiFi','Kitchen'], rating:4.0, reviews:[{stars:4,text:'Good midpoint on the south coast ring road.'},{stars:4,text:'Clean and functional.'}], website:null },
+  'Nesjavellir': { facilities:['Showers','Toilets'], rating:3.7, reviews:[{stars:3,text:'Basic but the geothermal setting is cool.'},{stars:4,text:'Quiet and unusual location.'}], website:null },
+  'Hella': { facilities:['Showers','Electricity','WiFi','Kitchen','Laundry'], rating:4.2, reviews:[{stars:4,text:'Good hub for south Iceland. Well equipped.'},{stars:4,text:'Friendly staff and clean facilities.'}], website:null },
+};
+
+let campMap, campMapMarkers = {}, activeCampKey = null;
+
+function initCampMap() {
+  if (campMap) return;
+  campMap = L.map('camp-map', { center:[64.8,-19.0], zoom:5, zoomControl:false, attributionControl:false });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom:19 }).addTo(campMap);
+  CAMPSITES.forEach(c => {
+    const m = L.circleMarker([c.lat, c.lng], { radius:7, fillColor:'#3fb950', color:'#0d1219', weight:2, fillOpacity:0.8 }).addTo(campMap);
+    m.on('click', () => selectCamp(c.name));
+    campMapMarkers[c.name] = m;
+  });
+}
+
+function renderCampsiteChips() {
+  document.getElementById('camp-chip-bar').innerHTML = CAMPSITES.map(c =>
+    `<button class="camp-chip" onclick="selectCamp('${c.name.replace(/'/g,"\\'")}')">⛺ ${c.name.split('–')[0].trim()}</button>`
+  ).join('');
+  // init map after chips rendered
+  setTimeout(initCampMap, 100);
+}
+
+function selectCamp(name) {
+  activeCampKey = name;
+  // update chips
+  document.querySelectorAll('.camp-chip').forEach(b => {
+    b.classList.toggle('active', b.textContent.includes(name.split('–')[0].trim()));
+  });
+  // highlight map marker
+  Object.entries(campMapMarkers).forEach(([n, m]) => {
+    m.setStyle(n === name
+      ? { fillColor:'#E85D26', color:'#fff', weight:2, radius:10, fillOpacity:1 }
+      : { fillColor:'#3fb950', color:'#0d1219', weight:2, radius:7, fillOpacity:0.8 }
+    );
+  });
+  // pan map
+  const camp = CAMPSITES.find(c => c.name === name);
+  if (camp && campMap) campMap.setView([camp.lat, camp.lng], 9, { animate:true });
+  // render detail
+  renderCampDetail(name, camp);
+}
+
+function renderCampDetail(name, camp) {
+  const data = CAMP_DATA[name] || { facilities:[], rating:0, reviews:[], website:null };
+  const bc = { Premium:'badge-blue', Basic:'badge-green', NP:'badge-yellow' };
+  const stars = n => '★'.repeat(Math.round(n)) + '☆'.repeat(5-Math.round(n));
+  document.getElementById('camp-detail').innerHTML = `
+    <div class="camp-detail-header">
+      <div class="camp-detail-name">${name}</div>
+      <div class="camp-detail-type card-badge ${bc[camp?.type]||'badge-green'}">${camp?.type||''}</div>
+    </div>
+    <div class="camp-detail-desc">${camp?.note||''} · Rating ${data.rating > 0 ? data.rating.toFixed(1)+'/5' : 'No rating'}</div>
+    <div class="camp-facilities">${data.facilities.map(f=>`<span class="camp-facility">${f}</span>`).join('')}</div>
+    ${data.reviews.length ? `
+    <div class="camp-reviews">
+      <div class="camp-review-title">Reviews</div>
+      ${data.reviews.map(r=>`<div class="camp-review-item"><div class="camp-review-stars">${stars(r.stars)}</div><div class="camp-review-text">${r.text}</div></div>`).join('')}
+    </div>` : ''}
+    <div class="camp-detail-actions">
+      <a href="${camp?.gmaps||'#'}" target="_blank" class="camp-action-btn camp-action-primary">Navigate</a>
+      ${data.website ? `<a href="${data.website}" target="_blank" class="camp-action-btn camp-action-secondary">Website</a>` : ''}
+    </div>
+  `;
 }
 function renderSights(){
   const cc={Waterfall:'badge-blue',Glacier:'badge-blue',Beach:'badge-green',Geyser:'badge-yellow',Heritage:'badge-yellow',Nature:'badge-green',Mountain:'badge-green',Canyon:'badge-green',Geothermal:'badge-yellow','Hot Spring':'badge-yellow'};
