@@ -1,4 +1,4 @@
-const CACHE = 'iceland-v2';
+const CACHE = 'iceland-v4';
 const STATIC = [
   '/',
   '/index.html',
@@ -25,8 +25,8 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // Always network-first for API calls (weather, roads)
-  if (url.pathname.startsWith('/api/') || url.hostname.includes('open-meteo')) {
+  // Always network-first for API calls and the app shell
+  if (url.pathname.startsWith('/api/') || url.hostname.includes('open-meteo') || url.pathname === '/' || url.pathname === '/index.html') {
     e.respondWith(
       fetch(e.request)
         .then(res => {
